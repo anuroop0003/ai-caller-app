@@ -1,40 +1,71 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Global shadcn/ui design system tokens for both Native and Web.
  */
-
-import '@/global.css';
 
 import { Platform } from 'react-native';
 
+import '@/global.css';
+
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    background: '#FFFFFF',
+    foreground: '#09090B',
+    card: '#FFFFFF',
+    cardForeground: '#09090B',
+    primary: '#18181B',
+    primaryForeground: '#FAFAFA',
+    secondary: '#F4F4F5',
+    secondaryForeground: '#18181B',
+    muted: '#F4F4F5',
+    mutedForeground: '#71717A',
+    border: '#E4E4E7',
+    destructive: '#E11D48',
+
+    // Native bridge aliases
+    text: '#09090B',
+    textSecondary: '#71717A',
+    backgroundElement: '#F4F4F5',
+    backgroundSelected: '#E4E4E7',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    background: '#09090B',
+    foreground: '#FAFAFA',
+    card: '#18181B',
+    cardForeground: '#FAFAFA',
+    primary: '#E4E4E7',
+    primaryForeground: '#18181B',
+    secondary: '#27272A',
+    secondaryForeground: '#FAFAFA',
+    muted: '#27272A',
+    mutedForeground: '#A1A1AA',
+    border: 'rgba(255, 255, 255, 0.10)',
+    destructive: '#F87171',
+
+    // Native bridge aliases
+    text: '#FAFAFA',
+    textSecondary: '#A1A1AA',
+    backgroundElement: '#18181B',
+    backgroundSelected: '#27272A',
   },
 } as const;
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
+export const Radius = {
+  sm: 6,
+  md: 8,
+  lg: 10,
+  xl: 14,
+  '2xl': 18,
+  '3xl': 22,
+  '4xl': 26,
+} as const;
+
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
     sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: 'ui-monospace',
   },
   default: {
