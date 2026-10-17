@@ -2,7 +2,6 @@ import { Pressable, View } from 'react-native';
 
 import { useRouter } from 'expo-router';
 
-import { ModelStatusBadge } from '@/components/model-details';
 import { ThemedText } from '@/components/themed-text';
 import { useModelInspection } from '@/hooks/use-model-inspection';
 import { cn } from '@/utils/cn';
@@ -19,6 +18,18 @@ export function StudioModelSummaryCard({
   const router = useRouter();
   const internalHook = useModelInspection();
   const modelInspection = externalHook ?? internalHook;
+
+  const isInstalled =
+    modelInspection.currentStatus === 'installed' ||
+    modelInspection.currentStatus === 'validated';
+  const statusLabel =
+    modelInspection.loading && !modelInspection.inspection
+      ? 'Checking...'
+      : isInstalled
+        ? 'Installed'
+        : modelInspection.currentStatus === 'loading'
+          ? 'Checking...'
+          : 'Not installed';
 
   return (
     <View
@@ -37,7 +48,21 @@ export function StudioModelSummaryCard({
           </ThemedText>
         </View>
 
-        <ModelStatusBadge status={modelInspection.currentStatus} size="sm" />
+        <View
+          className={`px-2 py-0.5 rounded-md border ${isInstalled
+              ? 'bg-emerald-500/10 border-emerald-500/20'
+              : 'bg-red-500/10 border-red-500/20'
+            }`}>
+          <ThemedText
+            type="code"
+            className={
+              isInstalled
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-red-600 dark:text-red-400'
+            }>
+            {statusLabel}
+          </ThemedText>
+        </View>
       </View>
 
       {/* Model Technical Tags */}

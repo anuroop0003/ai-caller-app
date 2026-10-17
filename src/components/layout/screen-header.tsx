@@ -24,7 +24,7 @@ export function ScreenHeader({
         rightAccessory && 'flex-row items-center justify-between',
         className
       )}>
-      <View className="flex-1 gap-1.5">
+      <View className={cn('gap-1.5', rightAccessory && 'flex-1')}>
         <ThemedText type="h2" className="text-foreground">
           {title}
         </ThemedText>

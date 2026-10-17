@@ -23,14 +23,14 @@ export function ThemeToggleButton({ className }: ThemeToggleButtonProps) {
     <Pressable
       onPress={toggleTheme}
       className={cn(
-        'w-8 h-8 rounded-md bg-secondary border border-border items-center justify-center active:opacity-70',
+        'w-9 h-9 rounded-md bg-secondary border border-border items-center justify-center active:opacity-70',
         className
       )}
       accessibilityRole="button"
       accessibilityLabel={`Switch to ${isDark ? 'light' : 'dark'} mode`}>
       <Ionicons
         name={isDark ? 'sunny' : 'moon'}
-        size={15}
+        size={18}
         color={isDark ? '#facc15' : '#71717a'}
       />
     </Pressable>

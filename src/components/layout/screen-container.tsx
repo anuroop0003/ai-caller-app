@@ -66,8 +66,6 @@ export function ScreenContainer({
             className={cn('flex-1 w-full max-w-[800px] px-4', containerClassName)}
             contentContainerStyle={
               contentContainerStyle ?? {
-                paddingTop: 16,
-                paddingBottom: 24,
                 gap: 16,
               }
             }
@@ -77,7 +75,7 @@ export function ScreenContainer({
         ) : (
           <View
             className={cn(
-              'flex-1 w-full max-w-[800px] px-4 pt-4 pb-6 gap-4',
+              'flex-1 w-full max-w-[800px] px-4 gap-4',
               containerClassName
             )}>
             {children}
