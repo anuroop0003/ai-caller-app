@@ -46,7 +46,7 @@ export function AppHeader({
   return (
     <View
       className={cn(
-        'w-full px-4 pt-2 pb-2 flex-row items-center justify-between',
+        'w-full px-4 py-2 flex-row items-center justify-between',
         className
       )}>
       {/* Brand & Subtitle */}

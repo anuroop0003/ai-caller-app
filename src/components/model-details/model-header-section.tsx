@@ -22,7 +22,7 @@ export function ModelHeaderSection({
 }: ModelHeaderSectionProps) {
   return (
     <View className={cn('flex-row justify-between items-start gap-3', className)}>
-      <View className="flex-1 gap-2">
+      <View className="flex-1 gap-0.5">
         <ThemedText type="small" className="text-muted-foreground">
           Dedicated Speech Model
         </ThemedText>

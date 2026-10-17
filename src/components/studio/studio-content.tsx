@@ -1,34 +1,75 @@
 import { View } from 'react-native';
 
-import type { useModelInspection } from '@/hooks/use-model-inspection';
-import type { QuickDiagnosticTestState } from '@/hooks/use-quick-diagnostic-test';
+import {
+  type UseAudioTranscriberResult,
+  useAudioTranscriber,
+} from '@/hooks/use-audio-transcriber';
 import { cn } from '@/utils/cn';
 
-import { StudioHeroCard } from './studio-hero-card';
-import { StudioModelSummaryCard } from './studio-model-summary-card';
-import { StudioQuickTestCard } from './studio-quick-test-card';
+import { AudioRecorderCard } from './audio-recorder-card';
+import { TranscriptionResultCard } from './transcription-result-card';
 
 interface StudioContentProps {
-  inspectionHook?: ReturnType<typeof useModelInspection>;
-  testHook?: QuickDiagnosticTestState;
+  transcriberHook?: UseAudioTranscriberResult;
   className?: string;
 }
 
 export function StudioContent({
-  inspectionHook,
-  testHook,
+  transcriberHook: externalHook,
   className,
-}: StudioContentProps) {
+}: StudioContentProps = {}) {
+  const internalHook = useAudioTranscriber();
+  const hook = externalHook ?? internalHook;
+
+  const {
+    isRecording,
+    recordingDurationSec,
+    recordedUri,
+    recordingError,
+    isPlayingPreview,
+    playbackPositionSec,
+    playbackDurationSec,
+    isTranscribing,
+    transcription,
+    transcriptionLatencyMs,
+    transcriptionError,
+    startRecording,
+    stopRecording,
+    cancelRecording,
+    transcribeAudio,
+    playPreview,
+    pausePreview,
+    clearTranscription,
+  } = hook;
+
   return (
     <View className={cn('gap-4', className)}>
-      {/* Hero & Model Summary Card Container */}
-      <View className="bg-card border border-border rounded-md p-5 gap-3 shadow-sm">
-        <StudioHeroCard />
-        <StudioModelSummaryCard inspectionHook={inspectionHook} />
-      </View>
+      {/* Live Audio Recorder Component */}
+      <AudioRecorderCard
+        isRecording={isRecording}
+        recordingDurationSec={recordingDurationSec}
+        recordedUri={recordedUri}
+        recordingError={recordingError}
+        isPlayingPreview={isPlayingPreview}
+        playbackPositionSec={playbackPositionSec}
+        playbackDurationSec={playbackDurationSec}
+        onStartRecording={startRecording}
+        onStopRecording={stopRecording}
+        onCancelRecording={cancelRecording}
+        onPlayPreview={playPreview}
+        onPausePreview={pausePreview}
+      />
 
-      {/* Diagnostics & Audio Engine Test Card */}
-      <StudioQuickTestCard testHook={testHook} />
+      {/* Real Speech-to-Text Transcription Converter Component */}
+      <TranscriptionResultCard
+        hasRecordedAudio={Boolean(recordedUri)}
+        isTranscribing={isTranscribing}
+        transcription={transcription}
+        transcriptionLatencyMs={transcriptionLatencyMs}
+        transcriptionError={transcriptionError}
+        onTranscribe={transcribeAudio}
+        onClear={clearTranscription}
+      />
     </View>
   );
 }

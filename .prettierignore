@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Expo & Metro
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+nativewind-env.d.ts
+
+# Native folders (Continuous Native Generation)
+/android
+/ios
+
+# Husky
+.husky/_
+
+# Assets and binary/model files
+assets/
+*.onnx
+*.wav
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.txt
+
+# Package locks & builds
+package-lock.json
+*.tsbuildinfo
