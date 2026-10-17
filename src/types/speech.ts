@@ -37,11 +37,7 @@ export interface ModelFileInspection {
 }
 
 export type ModelInstallationStatus =
-  | 'loading'
-  | 'not_installed'
-  | 'installed'
-  | 'validated'
-  | 'unavailable';
+  'loading' | 'not_installed' | 'installed' | 'validated' | 'unavailable';
 
 export interface ModelInspectionResult {
   readonly status: ModelInstallationStatus;

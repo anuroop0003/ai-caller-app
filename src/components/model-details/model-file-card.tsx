@@ -24,17 +24,9 @@ export interface ModelFileCardProps {
   className?: string;
 }
 
-export function ModelFileCard({
-  file,
-  isLoading,
-  className,
-}: ModelFileCardProps) {
+export function ModelFileCard({ file, isLoading, className }: ModelFileCardProps) {
   return (
-    <View
-      className={cn(
-        'p-3 rounded-md border border-border bg-secondary/40 gap-1.5',
-        className
-      )}>
+    <View className={cn('p-3 rounded-md border border-border bg-secondary/40 gap-1.5', className)}>
       <View className="flex-row justify-between items-center">
         <View className="flex-row items-center gap-2">
           <ThemedText type="smallBold" className="text-foreground">
@@ -45,17 +37,13 @@ export function ModelFileCard({
         <View
           className={cn(
             'px-2 py-0.5 rounded-md border',
-            file.exists
-              ? 'bg-blue-500/10 border-blue-500/20'
-              : 'bg-secondary border-border'
-          )}>
+            file.exists ? 'bg-blue-500/10 border-blue-500/20' : 'bg-secondary border-border'
+          )}
+        >
           <ThemedText
             type="code"
-            className={
-              file.exists
-                ? 'text-blue-600 dark:text-blue-400'
-                : 'text-muted-foreground'
-            }>
+            className={file.exists ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}
+          >
             {getFileBadgeText(file, isLoading)}
           </ThemedText>
         </View>

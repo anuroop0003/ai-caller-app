@@ -5,7 +5,8 @@ export default function ModelsScreen() {
   return (
     <ScreenContainer
       header={<AppHeader subtitle="Speech Models" icon="cube" />}
-      contentContainerStyle={{ gap: 16 }}>
+      contentContainerStyle={{ gap: 16 }}
+    >
       <ScreenHeader
         title="Speech Models"
         description="On-device acoustic models and vocabulary files bundled with the application."

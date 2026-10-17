@@ -32,7 +32,8 @@ export function TranscriptionCtaButton({
         'py-2.5 px-4 rounded-md bg-primary flex-row items-center justify-center gap-2 active:opacity-85 shadow-sm',
         disabled && 'opacity-60',
         className
-      )}>
+      )}
+    >
       <Ionicons name="sparkles" size={16} color={themeColors.primaryForeground} />
       <ThemedText type="smallBold" className="text-primary-foreground font-semibold text-sm">
         Convert Audio to Transcript

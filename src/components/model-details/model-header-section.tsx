@@ -40,14 +40,16 @@ export function ModelHeaderSection({
           isInstalled
             ? 'bg-emerald-500/10 border-emerald-500/20'
             : 'bg-red-500/10 border-red-500/20'
-        )}>
+        )}
+      >
         <ThemedText
           type="code"
           className={
             isInstalled
               ? 'text-emerald-600 dark:text-emerald-400'
               : 'text-red-600 dark:text-red-400'
-          }>
+          }
+        >
           {statusLabel}
         </ThemedText>
       </View>

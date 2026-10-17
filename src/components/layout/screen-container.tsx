@@ -1,10 +1,5 @@
 import type { ReactNode } from 'react';
-import {
-  type StyleProp,
-  type ViewStyle,
-  ScrollView,
-  View,
-} from 'react-native';
+import { type StyleProp, type ViewStyle, ScrollView, View } from 'react-native';
 import { type Edge, SafeAreaView } from 'react-native-safe-area-context';
 
 import { cn } from '@/utils/cn';
@@ -55,11 +50,7 @@ export function ScreenContainer({
   return (
     <View className={cn('flex-1 bg-background items-center', className)}>
       <SafeAreaView edges={edges} className="w-full flex-1 items-center">
-        {header ? (
-          <View className="w-full max-w-[800px] items-center">
-            {header}
-          </View>
-        ) : null}
+        {header ? <View className="w-full max-w-[800px] items-center">{header}</View> : null}
 
         {scrollable ? (
           <ScrollView
@@ -69,15 +60,12 @@ export function ScreenContainer({
                 gap: 16,
               }
             }
-            showsVerticalScrollIndicator={showsVerticalScrollIndicator}>
+            showsVerticalScrollIndicator={showsVerticalScrollIndicator}
+          >
             {children}
           </ScrollView>
         ) : (
-          <View
-            className={cn(
-              'flex-1 w-full max-w-[800px] px-4 gap-4',
-              containerClassName
-            )}>
+          <View className={cn('flex-1 w-full max-w-[800px] px-4 gap-4', containerClassName)}>
             {children}
           </View>
         )}

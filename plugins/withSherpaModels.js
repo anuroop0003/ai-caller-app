@@ -26,19 +26,14 @@ const withSherpaModels = (config) => {
         const source = path.join(sourceDir, file);
 
         if (!fs.existsSync(source)) {
-          throw new Error(
-            `[withSherpaModels] Required model file missing: ${source}`
-          );
+          throw new Error(`[withSherpaModels] Required model file missing: ${source}`);
         }
       }
 
       fs.mkdirSync(targetDir, { recursive: true });
 
       for (const file of files) {
-        fs.copyFileSync(
-          path.join(sourceDir, file),
-          path.join(targetDir, file)
-        );
+        fs.copyFileSync(path.join(sourceDir, file), path.join(targetDir, file));
       }
 
       return config;

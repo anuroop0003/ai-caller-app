@@ -38,7 +38,8 @@ export function ModelFilesSection({
           className={cn(
             'px-2.5 py-1 rounded-md bg-secondary active:opacity-70',
             refreshing && 'opacity-60'
-          )}>
+          )}
+        >
           <ThemedText type="small" className="text-muted-foreground">
             {refreshing ? 'Refreshing...' : 'Refresh'}
           </ThemedText>
@@ -46,11 +47,7 @@ export function ModelFilesSection({
       </View>
 
       {files.map((file) => (
-        <ModelFileCard
-          key={file.name}
-          file={file}
-          isLoading={loading}
-        />
+        <ModelFileCard key={file.name} file={file} isLoading={loading} />
       ))}
     </View>
   );

@@ -5,7 +5,8 @@ export default function SpeechStudioScreen() {
   return (
     <ScreenContainer
       header={<AppHeader subtitle="Malayalam Speech Studio" icon="mic" />}
-      contentContainerStyle={{ gap: 16 }}>
+      contentContainerStyle={{ gap: 16 }}
+    >
       <ScreenHeader
         title="Speech Studio"
         description="Record Malayalam voice audio and convert it to text in real time with on-device AI."

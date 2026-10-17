@@ -65,7 +65,11 @@ export function DiagnosticsContent({
       {metrics.testedCount > 0 ? (
         <View className="p-3 rounded-md bg-secondary/50 border border-border flex-row items-center justify-between">
           <ThemedText type="small" className="text-muted-foreground">
-            Tested <ThemedText type="smallBold" className="text-foreground">{metrics.testedCount}</ThemedText> of {metrics.totalSamples} samples
+            Tested{' '}
+            <ThemedText type="smallBold" className="text-foreground">
+              {metrics.testedCount}
+            </ThemedText>{' '}
+            of {metrics.totalSamples} samples
           </ThemedText>
           {metrics.averageLatencyMs != null ? (
             <ThemedText type="code" className="text-emerald-600 dark:text-emerald-400">
@@ -81,9 +85,7 @@ export function DiagnosticsContent({
           <SampleCard
             key={sample.id}
             sample={sample}
-            isPlaying={
-              audioPlayer.currentSample?.id === sample.id && audioPlayer.isPlaying
-            }
+            isPlaying={audioPlayer.currentSample?.id === sample.id && audioPlayer.isPlaying}
             isTranscribing={isTranscribing && transcribingSampleId === sample.id}
             isPlaybackSupported={audioPlayer.isPlaybackSupported}
             liveTranscript={liveResults[sample.id]?.transcription.text}

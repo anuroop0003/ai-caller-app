@@ -81,7 +81,8 @@ export function SampleCard({
               'w-10 h-10 rounded-md items-center justify-center border',
               langStyle.bg,
               langStyle.border
-            )}>
+            )}
+          >
             <Ionicons
               name={sample.speakerGender === 'female' ? 'woman' : 'man'}
               size={20}
@@ -158,18 +159,18 @@ export function SampleCard({
             isPlaying
               ? 'bg-blue-500/15 border-blue-500/40 dark:bg-blue-500/20 dark:border-blue-500/50'
               : 'bg-secondary border-border'
-          )}>
+          )}
+        >
           <Ionicons
             name={isPlaying ? 'pause' : 'play'}
             size={16}
-            color={isPlaying ? (isDark ? '#60a5fa' : '#2563eb') : (isDark ? '#e4e4e7' : '#18181b')}
+            color={isPlaying ? (isDark ? '#60a5fa' : '#2563eb') : isDark ? '#e4e4e7' : '#18181b'}
             style={{ marginRight: 4 }}
           />
           <ThemedText
             type={isPlaying ? 'smallBold' : 'small'}
-            className={cn(
-              isPlaying ? 'text-blue-600 dark:text-blue-400' : 'text-foreground'
-            )}>
+            className={cn(isPlaying ? 'text-blue-600 dark:text-blue-400' : 'text-foreground')}
+          >
             {isPlaying ? 'Pause Audio' : isPlaybackSupported ? 'Play Audio' : 'Audio (Rebuild)'}
           </ThemedText>
         </Pressable>
@@ -182,7 +183,8 @@ export function SampleCard({
           className={cn(
             'flex-1 flex-row items-center justify-center py-2 px-3 rounded-md active:opacity-80',
             isTranscribing ? 'bg-primary/70' : 'bg-primary'
-          )}>
+          )}
+        >
           {isTranscribing ? (
             <ActivityIndicator
               size="small"
@@ -190,12 +192,7 @@ export function SampleCard({
               style={{ marginRight: 6, transform: [{ scale: 0.8 }] }}
             />
           ) : (
-            <Ionicons
-              name="flash"
-              size={16}
-              color={primaryForeground}
-              style={{ marginRight: 4 }}
-            />
+            <Ionicons name="flash" size={16} color={primaryForeground} style={{ marginRight: 4 }} />
           )}
           <ThemedText type="smallBold" className="text-primary-foreground">
             {isTranscribing ? 'Transcribing...' : 'Transcribe Live'}

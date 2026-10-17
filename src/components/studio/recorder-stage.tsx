@@ -41,14 +41,16 @@ export function RecorderStage({
       className={cn(
         'p-4 rounded-md border border-border bg-secondary/40 items-center justify-center gap-3',
         className
-      )}>
+      )}
+    >
       {/* Large Timer Display */}
       <ThemedText
         type="h2"
         className={cn(
           'text-3xl font-mono tracking-wider',
           isRecording ? 'text-red-600 dark:text-red-400' : 'text-foreground'
-        )}>
+        )}
+      >
         {isRecording
           ? formatDuration(recordingDurationSec)
           : hasRecordedAudio
@@ -81,7 +83,8 @@ export function RecorderStage({
             onPress={onStopRecording}
             accessibilityRole="button"
             accessibilityLabel="Stop recording"
-            className="w-14 h-14 rounded-md bg-red-600 items-center justify-center shadow-sm active:opacity-85">
+            className="w-14 h-14 rounded-md bg-red-600 items-center justify-center shadow-sm active:opacity-85"
+          >
             <Ionicons name="stop" size={24} color="#ffffff" />
           </Pressable>
         ) : (
@@ -89,7 +92,8 @@ export function RecorderStage({
             onPress={onStartRecording}
             accessibilityRole="button"
             accessibilityLabel="Start recording"
-            className="w-14 h-14 rounded-md bg-primary items-center justify-center shadow-sm active:opacity-85">
+            className="w-14 h-14 rounded-md bg-primary items-center justify-center shadow-sm active:opacity-85"
+          >
             <Ionicons name="mic" size={26} color={themeColors.primaryForeground} />
           </Pressable>
         )}

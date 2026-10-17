@@ -30,7 +30,8 @@ export function TranscriptionOutputBox({
         className={cn(
           'p-3.5 rounded-md bg-primary/10 border border-primary/30 flex-row items-center gap-2.5',
           className
-        )}>
+        )}
+      >
         <ActivityIndicator size="small" color="#2563eb" />
         <ThemedText type="small" className="text-primary">
           Transcribing live with on-device model...
@@ -46,7 +47,8 @@ export function TranscriptionOutputBox({
         className={cn(
           'p-3.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 gap-2',
           className
-        )}>
+        )}
+      >
         {/* Header: Status Dot & Latency */}
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center gap-1.5">
@@ -106,7 +108,8 @@ export function TranscriptionOutputBox({
             onPress={onRetranscribe}
             accessibilityRole="button"
             accessibilityLabel="Re-transcribe audio"
-            className="flex-1 py-2 px-3 rounded-md bg-card border border-border items-center justify-center active:opacity-75">
+            className="flex-1 py-2 px-3 rounded-md bg-card border border-border items-center justify-center active:opacity-75"
+          >
             <ThemedText type="smallBold" className="text-foreground text-xs font-semibold">
               Re-transcribe
             </ThemedText>
@@ -116,7 +119,8 @@ export function TranscriptionOutputBox({
             onPress={onClear}
             accessibilityRole="button"
             accessibilityLabel="Clear transcript"
-            className="py-2 px-4 rounded-md bg-card border border-border items-center justify-center active:opacity-75">
+            className="py-2 px-4 rounded-md bg-card border border-border items-center justify-center active:opacity-75"
+          >
             <ThemedText type="small" className="text-muted-foreground text-xs">
               Clear
             </ThemedText>
@@ -132,7 +136,8 @@ export function TranscriptionOutputBox({
       className={cn(
         'p-3.5 rounded-md bg-secondary/40 border border-dashed border-border gap-1',
         className
-      )}>
+      )}
+    >
       <ThemedText type="smallBold" className="text-muted-foreground">
         Live Model Output
       </ThemedText>

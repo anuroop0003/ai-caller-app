@@ -47,11 +47,7 @@ export function ModelDetailsContent({
           : 'Not installed';
 
   return (
-    <View
-      className={cn(
-        'bg-card border border-border rounded-md p-4 gap-4 shadow-sm',
-        className
-      )}>
+    <View className={cn('bg-card border border-border rounded-md p-4 gap-4 shadow-sm', className)}>
       {/* Top row: Title & Active Badge */}
       <ModelHeaderSection
         name={activeModel?.name}

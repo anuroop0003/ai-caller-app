@@ -39,11 +39,7 @@ export function AudioRecorderCard({
   className,
 }: AudioRecorderCardProps) {
   return (
-    <View
-      className={cn(
-        'rounded-md p-4 border border-border bg-card gap-3 shadow-sm',
-        className
-      )}>
+    <View className={cn('rounded-md p-4 border border-border bg-card gap-3 shadow-sm', className)}>
       {/* Header Row & Live Status Badge */}
       <RecorderHeaderSection isRecording={isRecording} recordedUri={recordedUri} />
 

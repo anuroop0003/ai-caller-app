@@ -30,11 +30,7 @@ export function TranscriptionResultCard({
   className,
 }: TranscriptionResultCardProps) {
   return (
-    <View
-      className={cn(
-        'rounded-md p-4 border border-border bg-card gap-3 shadow-sm',
-        className
-      )}>
+    <View className={cn('rounded-md p-4 border border-border bg-card gap-3 shadow-sm', className)}>
       {/* Top Header Row matching ModelHeaderSection */}
       <TranscriptionHeaderSection />
 

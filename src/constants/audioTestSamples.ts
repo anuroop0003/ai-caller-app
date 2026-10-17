@@ -30,7 +30,8 @@ export const AUDIO_TEST_SAMPLES: AudioTestSample[] = [
     speakerGender: 'male',
     speakerLabel: 'Akhilan (Native Speaker)',
     durationLabel: '2.2s',
-    description: 'Authentic 2.2s speech snippet ("2001-ലെ ഇന്ത്യൻ..."). Note: Pure ASR outputs spoken words rather than numeric digits.',
+    description:
+      'Authentic 2.2s speech snippet ("2001-ലെ ഇന്ത്യൻ..."). Note: Pure ASR outputs spoken words rather than numeric digits.',
     asset: require('../../assets/audio/samples/ml_male_formal.wav'),
   },
   {
@@ -52,7 +53,8 @@ export const AUDIO_TEST_SAMPLES: AudioTestSample[] = [
     speakerGender: 'male',
     speakerLabel: 'Native Malayalam Speaker',
     durationLabel: '5.0s',
-    description: 'Official reference speech sample bundled with the IndicConformer model distribution.',
+    description:
+      'Official reference speech sample bundled with the IndicConformer model distribution.',
     asset: require('../../assets/audio/samples/ml_male_manglish.wav'),
   },
   {

@@ -44,11 +44,7 @@ export function AppHeader({
   const iconColor = Colors[isDark ? 'dark' : 'light'].primaryForeground;
 
   return (
-    <View
-      className={cn(
-        'w-full px-4 py-2 flex-row items-center justify-between',
-        className
-      )}>
+    <View className={cn('w-full px-4 py-2 flex-row items-center justify-between', className)}>
       {/* Brand & Subtitle */}
       <View className="flex-row items-center gap-2.5">
         <View className="w-10 h-10 rounded-md bg-primary items-center justify-center shadow-sm">

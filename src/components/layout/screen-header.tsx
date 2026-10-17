@@ -11,19 +11,15 @@ export interface ScreenHeaderProps {
   className?: string;
 }
 
-export function ScreenHeader({
-  title,
-  description,
-  rightAccessory,
-  className,
-}: ScreenHeaderProps) {
+export function ScreenHeader({ title, description, rightAccessory, className }: ScreenHeaderProps) {
   return (
     <View
       className={cn(
         'w-full py-1 gap-1.5',
         rightAccessory && 'flex-row items-center justify-between',
         className
-      )}>
+      )}
+    >
       <View className={cn('gap-1.5', rightAccessory && 'flex-1')}>
         <ThemedText type="h2" className="text-foreground">
           {title}

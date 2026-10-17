@@ -14,9 +14,7 @@ export function getBenchmarkMetrics(
 
   const averageLatencyMs =
     testedCount > 0
-      ? Math.round(
-        resultsList.reduce((acc, curr) => acc + curr.latencyMs, 0) / testedCount
-      )
+      ? Math.round(resultsList.reduce((acc, curr) => acc + curr.latencyMs, 0) / testedCount)
       : null;
 
   return {

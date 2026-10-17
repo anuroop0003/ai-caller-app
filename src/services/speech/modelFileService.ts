@@ -39,7 +39,8 @@ export class ModelFileService {
     if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
       return {
         supported: false,
-        reason: 'Expo Go does not include custom native TurboModules. Please use a development build.',
+        reason:
+          'Expo Go does not include custom native TurboModules. Please use a development build.',
       };
     }
 
@@ -139,9 +140,7 @@ export class ModelFileService {
       };
     });
 
-    const hasRequiredFiles = inspectedFiles
-      .filter((f) => f.isRequired)
-      .every((f) => f.exists);
+    const hasRequiredFiles = inspectedFiles.filter((f) => f.isRequired).every((f) => f.exists);
 
     const status: ModelInstallationStatus = hasRequiredFiles ? 'installed' : 'not_installed';
 

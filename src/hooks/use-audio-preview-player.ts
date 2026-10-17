@@ -12,9 +12,7 @@ export interface UseAudioPreviewPlayerResult {
   stop: () => void;
 }
 
-export function useAudioPreviewPlayer(
-  audioUri: string | null
-): UseAudioPreviewPlayerResult {
+export function useAudioPreviewPlayer(audioUri: string | null): UseAudioPreviewPlayerResult {
   const [isPlaying, setIsPlaying] = useState(false);
   const [positionSec, setPositionSec] = useState(0);
   const [durationSec, setDurationSec] = useState(0);

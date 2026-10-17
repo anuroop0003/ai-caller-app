@@ -27,12 +27,9 @@ export function ThemeToggleButton({ className }: ThemeToggleButtonProps) {
         className
       )}
       accessibilityRole="button"
-      accessibilityLabel={`Switch to ${isDark ? 'light' : 'dark'} mode`}>
-      <Ionicons
-        name={isDark ? 'sunny' : 'moon'}
-        size={18}
-        color={isDark ? '#facc15' : '#71717a'}
-      />
+      accessibilityLabel={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+    >
+      <Ionicons name={isDark ? 'sunny' : 'moon'} size={18} color={isDark ? '#facc15' : '#71717a'} />
     </Pressable>
   );
 }

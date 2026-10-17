@@ -19,7 +19,8 @@ export function LanguageFilterTabs({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: 6, paddingVertical: 2 }}>
+      contentContainerStyle={{ gap: 6, paddingVertical: 2 }}
+    >
       {filterTabs.map((tab) => {
         const isActive = activeFilter === tab.id;
         return (
@@ -32,10 +33,12 @@ export function LanguageFilterTabs({
             className={cn(
               'py-1.5 px-3 rounded-md border active:opacity-75',
               isActive ? 'bg-primary border-primary' : 'bg-card border-border'
-            )}>
+            )}
+          >
             <ThemedText
               type={isActive ? 'smallBold' : 'small'}
-              className={cn(isActive ? 'text-primary-foreground' : 'text-foreground')}>
+              className={cn(isActive ? 'text-primary-foreground' : 'text-foreground')}
+            >
               {tab.label} ({tab.count})
             </ThemedText>
           </Pressable>

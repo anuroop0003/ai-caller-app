@@ -7,10 +7,7 @@ export interface StatusBadgeConfig {
   label: string;
 }
 
-const STATUS_BADGE_CONFIG: Record<
-  ModelInstallationStatus,
-  StatusBadgeConfig
-> = {
+const STATUS_BADGE_CONFIG: Record<ModelInstallationStatus, StatusBadgeConfig> = {
   loading: {
     containerClass: 'bg-secondary border border-border',
     textClass: 'text-muted-foreground',
@@ -43,8 +40,6 @@ const STATUS_BADGE_CONFIG: Record<
   },
 };
 
-export function getStatusBadgeConfig(
-  status: ModelInstallationStatus
-): StatusBadgeConfig {
+export function getStatusBadgeConfig(status: ModelInstallationStatus): StatusBadgeConfig {
   return STATUS_BADGE_CONFIG[status];
 }

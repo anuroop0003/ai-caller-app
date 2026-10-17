@@ -7,4 +7,3 @@ export function useColorScheme(): 'light' | 'dark' {
 
   return (colorScheme ?? rnScheme ?? 'light') === 'dark' ? 'dark' : 'light';
 }
-

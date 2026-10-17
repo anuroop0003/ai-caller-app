@@ -13,12 +13,7 @@ import type {
 import { getBenchmarkMetrics } from '@/utils/benchmarkMetrics';
 
 // Re-export types for backward compatibility across existing components
-export type {
-  BenchmarkMetrics,
-  DiagnosticsFilterTab,
-  DiagnosticsFilterType,
-  UseDiagnosticsResult
-};
+export type { BenchmarkMetrics, DiagnosticsFilterTab, DiagnosticsFilterType, UseDiagnosticsResult };
 
 /**
  * Facade hook for the speech diagnostics screen.
@@ -30,7 +25,6 @@ export function useDiagnostics(): UseDiagnosticsResult {
   const audioPlayer = useSampleAudioPlayer();
 
   const { currentSample, isPlaying, pause, play } = audioPlayer;
-
 
   const metrics = useMemo(
     () => getBenchmarkMetrics(benchmark.liveResults, AUDIO_TEST_SAMPLES.length),

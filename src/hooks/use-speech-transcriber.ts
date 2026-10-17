@@ -14,9 +14,7 @@ export interface UseSpeechTranscriberResult {
   clearTranscription: () => void;
 }
 
-export function useSpeechTranscriber(
-  sourceAudioUri: string | null
-): UseSpeechTranscriberResult {
+export function useSpeechTranscriber(sourceAudioUri: string | null): UseSpeechTranscriberResult {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcription, setTranscription] = useState<SttTranscriptionResult | null>(null);
   const [transcriptionLatencyMs, setTranscriptionLatencyMs] = useState<number | null>(null);

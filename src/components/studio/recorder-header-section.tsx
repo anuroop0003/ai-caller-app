@@ -37,7 +37,8 @@ export function RecorderHeaderSection({
             : recordedUri
               ? 'bg-emerald-500/10 border-emerald-500/20'
               : 'bg-secondary border-border'
-        )}>
+        )}
+      >
         <ThemedText
           type="code"
           className={
@@ -46,7 +47,8 @@ export function RecorderHeaderSection({
               : recordedUri
                 ? 'text-emerald-600 dark:text-emerald-400'
                 : 'text-muted-foreground'
-          }>
+          }
+        >
           {isRecording ? 'Recording' : recordedUri ? 'Ready' : 'Idle'}
         </ThemedText>
       </View>

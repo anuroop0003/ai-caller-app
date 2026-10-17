@@ -1,9 +1,6 @@
 import { View } from 'react-native';
 
-import {
-  type UseAudioTranscriberResult,
-  useAudioTranscriber,
-} from '@/hooks/use-audio-transcriber';
+import { type UseAudioTranscriberResult, useAudioTranscriber } from '@/hooks/use-audio-transcriber';
 import { cn } from '@/utils/cn';
 
 import { AudioRecorderCard } from './audio-recorder-card';

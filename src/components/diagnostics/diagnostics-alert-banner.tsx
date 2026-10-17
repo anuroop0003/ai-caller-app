@@ -43,14 +43,10 @@ export function DiagnosticsAlertBanner({
       className={cn(
         'p-3 rounded-md border flex-row items-start justify-between gap-2.5',
         styles.container
-      )}>
+      )}
+    >
       <View className="flex-row items-start gap-2 flex-1">
-        <Ionicons
-          name={styles.icon}
-          size={18}
-          color={styles.iconColor}
-          style={{ marginTop: 1 }}
-        />
+        <Ionicons name={styles.icon} size={18} color={styles.iconColor} style={{ marginTop: 1 }} />
         <View className="flex-1">
           {title ? (
             <ThemedText type="smallBold" className={cn(styles.text, 'mb-0.5')}>
@@ -68,7 +64,8 @@ export function DiagnosticsAlertBanner({
           onPress={onDismiss}
           accessibilityRole="button"
           accessibilityLabel="Dismiss alert"
-          className="p-1 active:opacity-70 -mr-1 -mt-1">
+          className="p-1 active:opacity-70 -mr-1 -mt-1"
+        >
           <Ionicons name="close" size={16} color={styles.iconColor} />
         </Pressable>
       ) : null}

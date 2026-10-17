@@ -1,7 +1,4 @@
-import type {
-  ModelInspectionResult,
-  SpeechModelMetadata,
-} from '@/types/speech';
+import type { ModelInspectionResult, SpeechModelMetadata } from '@/types/speech';
 
 export interface DisplayedModelFile {
   name: string;
@@ -36,9 +33,7 @@ export function getStorageSourceLabel(
     return 'Inspecting...';
   }
 
-  return inspection?.storageSource === 'bundled'
-    ? 'Bundled APK Asset'
-    : 'Not Installed';
+  return inspection?.storageSource === 'bundled' ? 'Bundled APK Asset' : 'Not Installed';
 }
 
 export function getFolderContentsTitle(

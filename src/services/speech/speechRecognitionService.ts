@@ -55,9 +55,7 @@ export class SpeechRecognitionService {
    * Serializes concurrent initialization calls and preserves the active engine when
    * initializing the same model.
    */
-  static async initialize(
-    model: SpeechModelMetadata = DEFAULT_SPEECH_MODEL
-  ): Promise<SttEngine> {
+  static async initialize(model: SpeechModelMetadata = DEFAULT_SPEECH_MODEL): Promise<SttEngine> {
     if (this.activeEngine && this.activeModelId === model.id) {
       return this.activeEngine;
     }

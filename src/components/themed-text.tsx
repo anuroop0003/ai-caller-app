@@ -40,10 +40,10 @@ export function ThemedText({
     themeColor != null
       ? theme[themeColor]
       : !className
-      ? type === 'muted'
-        ? theme.mutedForeground
-        : theme.foreground
-      : undefined;
+        ? type === 'muted'
+          ? theme.mutedForeground
+          : theme.foreground
+        : undefined;
 
   return (
     <Text

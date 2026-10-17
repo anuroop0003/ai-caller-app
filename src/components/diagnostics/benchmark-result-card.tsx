@@ -22,11 +22,17 @@ export function BenchmarkResultCard({ result, error, onClear }: BenchmarkResultC
           <ThemedText type="smallBold" className="text-destructive">
             Recognition Failed
           </ThemedText>
-          <Pressable onPress={onClear} className="p-1 active:opacity-70" accessibilityLabel="Dismiss error">
+          <Pressable
+            onPress={onClear}
+            className="p-1 active:opacity-70"
+            accessibilityLabel="Dismiss error"
+          >
             <Ionicons name="close" size={16} color="#ef4444" />
           </Pressable>
         </View>
-        <ThemedText type="small" className="text-foreground">{error}</ThemedText>
+        <ThemedText type="small" className="text-foreground">
+          {error}
+        </ThemedText>
       </View>
     );
   }
@@ -77,14 +83,23 @@ export function BenchmarkResultCard({ result, error, onClear }: BenchmarkResultC
           onPress={onClear}
           accessibilityRole="button"
           accessibilityLabel="Dismiss recognition output"
-          className="px-2.5 py-1 rounded-md bg-secondary border border-border active:opacity-75">
-          <ThemedText type="small" className="text-muted-foreground">Dismiss</ThemedText>
+          className="px-2.5 py-1 rounded-md bg-secondary border border-border active:opacity-75"
+        >
+          <ThemedText type="small" className="text-muted-foreground">
+            Dismiss
+          </ThemedText>
         </Pressable>
       </View>
 
       {/* Metrics Row */}
       <View className="flex-row flex-wrap gap-2">
-        <View className={cn('px-2.5 py-1 rounded-md border flex-row items-center gap-1', latencyStyle.bg, latencyStyle.border)}>
+        <View
+          className={cn(
+            'px-2.5 py-1 rounded-md border flex-row items-center gap-1',
+            latencyStyle.bg,
+            latencyStyle.border
+          )}
+        >
           <Ionicons name="flash" size={12} color="#10b981" />
           <ThemedText type="code" className={latencyStyle.color}>
             {latencyStyle.label}
