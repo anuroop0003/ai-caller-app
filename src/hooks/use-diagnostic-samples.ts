@@ -49,6 +49,11 @@ export function useDiagnosticSamples(
         label: 'Tamil',
         count: AUDIO_TEST_SAMPLES.filter((s) => s.languageCode === 'ta').length,
       },
+      {
+        id: 'en',
+        label: 'English',
+        count: AUDIO_TEST_SAMPLES.filter((s) => s.languageCode === 'en').length,
+      },
     ],
     []
   );

@@ -2,7 +2,7 @@ import type { AudioTestSample } from '@/constants/audioTestSamples';
 import type { UseSampleAudioPlayerResult } from '@/hooks/use-sample-audio-player';
 import type { BenchmarkRunResult } from '@/services/speech/audioBenchmarkService';
 
-export type DiagnosticsFilterType = 'all' | 'ml' | 'manglish' | 'hi' | 'ta';
+export type DiagnosticsFilterType = 'all' | 'ml' | 'manglish' | 'hi' | 'ta' | 'en';
 
 export interface DiagnosticsFilterTab {
   id: DiagnosticsFilterType;
