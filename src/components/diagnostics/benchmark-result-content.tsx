@@ -55,11 +55,7 @@ export function BenchmarkResultContent({ result, onClear }: BenchmarkResultConte
       </View>
 
       {/* Model Output Box */}
-      <TranscriptionBox
-        text={transcription.text}
-        title="Transcription"
-        tag="On-Device INT8"
-      />
+      <TranscriptionBox text={transcription.text} title="Transcription" tag="On-Device INT8" />
     </View>
   );
 }
