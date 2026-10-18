@@ -9,7 +9,9 @@ dist/
 web-build/
 expo-env.d.ts
 
-# Native
+# Generated native folders (Continuous Native Generation)
+/ios
+/android
 .kotlin/
 *.orig.*
 *.jks
@@ -18,27 +20,48 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
-# Metro
-.metro-health-check*
+# Compiled mobile binaries
+*.apk
+*.aab
+*.ipa
 
-# debug
+# Neural model weights & archives
+*.onnx
+*.bin
+*.pt
+*.safetensors
+*.tar.gz
+*.tar.bz2
+*.tar
+*.zip
+*.7z
+
+# Metro & debugging
+.metro-health-check*
+*.log
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+pnpm-debug.log*
 
-# macOS
+# Environment & local secrets
+.env
+.env.*
+!.env.example
+
+# macOS & Windows system files
 .DS_Store
+Thumbs.db
 *.pem
 
-# local env files
-.env*.local
+# IDE & Editor cache
+.idea/
+*.swp
+*.swo
 
-# typescript
+# TypeScript & Tests
 *.tsbuildinfo
+coverage/
+.nyc_output/
 
 example
-
-# generated native folders
-/ios
-/android
-*.onnx

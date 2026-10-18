@@ -21,9 +21,9 @@ export function SampleTranscriptionPanel({
 
   if (isTranscribing) {
     return (
-      <View className="p-3.5 rounded-md bg-primary/10 border border-primary/30 flex-row items-center gap-2.5">
+      <View className="p-3.5 rounded-md bg-blue-500/10 border border-blue-500/30 flex-row items-center gap-2.5">
         <ActivityIndicator size="small" color="#2563eb" />
-        <ThemedText type="small" className="text-primary">
+        <ThemedText type="small" className="text-blue-700 dark:text-blue-300 font-medium">
           Transcribing live with on-device model...
         </ThemedText>
       </View>

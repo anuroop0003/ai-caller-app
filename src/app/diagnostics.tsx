@@ -8,8 +8,8 @@ export default function DiagnosticsScreen() {
       contentContainerStyle={{ gap: 16 }}
     >
       <ScreenHeader
-        title="Audio Diagnostics"
-        description="Benchmark on-device transcription accuracy and latency across multi-lingual test samples."
+        title="Voice Diagnostics"
+        description="Benchmark on-device Malayalam speech recognition (STT) and speech synthesis (TTS)."
       />
       <DiagnosticsContent />
     </ScreenContainer>

@@ -1,4 +1,4 @@
-import { Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { cn } from '@/utils/cn';
@@ -36,10 +36,17 @@ export function ModelFilesSection({
           accessibilityRole="button"
           accessibilityLabel="Refresh model files"
           className={cn(
-            'px-2.5 py-1 rounded-md bg-secondary active:opacity-70',
-            refreshing && 'opacity-60'
+            'px-2.5 py-1 rounded-md bg-secondary active:opacity-70 flex-row items-center gap-1.5',
+            (loading || refreshing) && 'opacity-60'
           )}
         >
+          {refreshing ? (
+            <ActivityIndicator
+              size="small"
+              color="#71717a"
+              style={{ transform: [{ scale: 0.7 }] }}
+            />
+          ) : null}
           <ThemedText type="small" className="text-muted-foreground">
             {refreshing ? 'Refreshing...' : 'Refresh'}
           </ThemedText>

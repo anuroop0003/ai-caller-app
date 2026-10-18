@@ -17,6 +17,7 @@ nativewind-env.d.ts
 
 # Assets and binary/model files
 assets/
+src/models/
 *.onnx
 *.wav
 *.png

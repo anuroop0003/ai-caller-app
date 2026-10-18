@@ -11,6 +11,7 @@ export interface SampleCardActionsProps {
   sample: AudioTestSample;
   isPlaying: boolean;
   isTranscribing: boolean;
+  isAnyTranscribing?: boolean;
   isPlaybackSupported?: boolean;
   onTogglePlay: (sample: AudioTestSample) => void;
   onRunTest: (sample: AudioTestSample) => void;
@@ -20,6 +21,7 @@ export function SampleCardActions({
   sample,
   isPlaying,
   isTranscribing,
+  isAnyTranscribing = false,
   isPlaybackSupported = true,
   onTogglePlay,
   onRunTest,
@@ -58,13 +60,15 @@ export function SampleCardActions({
 
       {/* Live Benchmark Transcribe Button */}
       <Pressable
-        disabled={isTranscribing}
+        disabled={isTranscribing || isAnyTranscribing}
         onPress={() => onRunTest(sample)}
         accessibilityRole="button"
-        accessibilityLabel="Run live transcription benchmark"
+        accessibilityLabel={
+          isTranscribing ? 'Transcribing live audio' : 'Run live transcription benchmark'
+        }
         className={cn(
-          'flex-1 flex-row items-center justify-center py-2 px-3 rounded-md active:opacity-80',
-          isTranscribing ? 'bg-primary/70' : 'bg-primary'
+          'flex-1 flex-row items-center justify-center py-2 px-3 rounded-md bg-primary active:opacity-80',
+          (isTranscribing || isAnyTranscribing) && 'opacity-60'
         )}
       >
         {isTranscribing ? (

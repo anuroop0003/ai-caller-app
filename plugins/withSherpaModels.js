@@ -36,6 +36,23 @@ const withSherpaModels = (config) => {
         fs.copyFileSync(path.join(sourceDir, file), path.join(targetDir, file));
       }
 
+      // Also copy TTS model if present
+      const ttsSourceDir = path.join(sourceDir, 'vits-piper-ml_IN-meera-medium');
+      const ttsTargetDir = path.join(
+        config.modRequest.platformProjectRoot,
+        'app',
+        'src',
+        'main',
+        'assets',
+        'models',
+        'vits-piper-ml_IN-meera-medium'
+      );
+
+      if (fs.existsSync(ttsSourceDir)) {
+        fs.mkdirSync(ttsTargetDir, { recursive: true });
+        fs.cpSync(ttsSourceDir, ttsTargetDir, { recursive: true });
+      }
+
       return config;
     },
   ]);

@@ -11,3 +11,7 @@ export * from './transcription-box';
 export * from './language-filter-tabs';
 export * from './diagnostics-alert-banner';
 export * from './diagnostics-content';
+export * from './diagnostics-mode-tabs';
+export * from './diagnostics-stt-content';
+export * from './diagnostics-tts-content';
+export * from './tts-benchmark-card';

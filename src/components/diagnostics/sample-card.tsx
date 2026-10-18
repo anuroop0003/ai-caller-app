@@ -10,6 +10,7 @@ export interface SampleCardProps {
   sample: AudioTestSample;
   isPlaying: boolean;
   isTranscribing: boolean;
+  isAnyTranscribing?: boolean;
   isPlaybackSupported?: boolean;
   liveTranscript?: string | null;
   liveLatencyMs?: number | null;
@@ -22,6 +23,7 @@ export function SampleCard({
   sample,
   isPlaying,
   isTranscribing,
+  isAnyTranscribing = false,
   isPlaybackSupported = true,
   liveTranscript,
   liveLatencyMs,
@@ -44,6 +46,7 @@ export function SampleCard({
         sample={sample}
         isPlaying={isPlaying}
         isTranscribing={isTranscribing}
+        isAnyTranscribing={isAnyTranscribing}
         isPlaybackSupported={isPlaybackSupported}
         onTogglePlay={onTogglePlay}
         onRunTest={onRunTest}

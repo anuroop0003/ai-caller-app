@@ -23,17 +23,17 @@ export function TranscriptionOutputBox({
   onClear,
   className,
 }: TranscriptionOutputBoxProps) {
-  // 1. Loading / In-Progress State
-  if (isTranscribing) {
+  // 1. Loading / In-Progress State (only if no transcription is displayed yet)
+  if (isTranscribing && !transcription) {
     return (
       <View
         className={cn(
-          'p-3.5 rounded-md bg-primary/10 border border-primary/30 flex-row items-center gap-2.5',
+          'p-3.5 rounded-md bg-blue-500/10 border border-blue-500/30 flex-row items-center gap-2.5',
           className
         )}
       >
         <ActivityIndicator size="small" color="#2563eb" />
-        <ThemedText type="small" className="text-primary">
+        <ThemedText type="small" className="text-blue-700 dark:text-blue-300 font-medium">
           Transcribing live with on-device model...
         </ThemedText>
       </View>
@@ -45,30 +45,55 @@ export function TranscriptionOutputBox({
     return (
       <View
         className={cn(
-          'p-3.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 gap-2',
+          'p-3.5 rounded-md border gap-2',
+          isTranscribing
+            ? 'bg-blue-500/10 border-blue-500/30'
+            : 'bg-emerald-500/10 border-emerald-500/30',
           className
         )}
       >
         {/* Header: Status Dot & Latency */}
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center gap-1.5">
-            <View className="w-2 h-2 rounded-full bg-emerald-500" />
-            <ThemedText type="smallBold" className="text-emerald-700 dark:text-emerald-300">
-              Live Transcription
+            <View
+              className={cn(
+                'w-2 h-2 rounded-full',
+                isTranscribing ? 'bg-blue-500' : 'bg-emerald-500'
+              )}
+            />
+            <ThemedText
+              type="smallBold"
+              className={
+                isTranscribing
+                  ? 'text-blue-700 dark:text-blue-300'
+                  : 'text-emerald-700 dark:text-emerald-300'
+              }
+            >
+              {isTranscribing ? 'Generating Transcription...' : 'Live Transcription'}
             </ThemedText>
           </View>
-          {transcriptionLatencyMs != null ? (
+          {transcriptionLatencyMs != null && !isTranscribing ? (
             <View className="flex-row items-center gap-1">
               <Ionicons name="flash" size={11} color="#10b981" />
               <ThemedText type="code" className="text-emerald-600 dark:text-emerald-400">
                 {transcriptionLatencyMs} ms
               </ThemedText>
             </View>
+          ) : isTranscribing ? (
+            <ActivityIndicator
+              size="small"
+              color="#2563eb"
+              style={{ transform: [{ scale: 0.7 }] }}
+            />
           ) : null}
         </View>
 
         {/* Selectable Transcribed Malayalam Text */}
-        <ThemedText selectable type="p" className="text-foreground leading-6 font-medium">
+        <ThemedText
+          selectable
+          type="p"
+          className={cn('text-foreground leading-6 font-medium', isTranscribing && 'opacity-60')}
+        >
           &ldquo;{transcription.text || '(silence / no speech detected)'}&rdquo;
         </ThemedText>
 
@@ -105,21 +130,36 @@ export function TranscriptionOutputBox({
         {/* Action Controls */}
         <View className="flex-row items-center gap-2 pt-1">
           <Pressable
+            disabled={isTranscribing}
             onPress={onRetranscribe}
             accessibilityRole="button"
-            accessibilityLabel="Re-transcribe audio"
-            className="flex-1 py-2 px-3 rounded-md bg-card border border-border items-center justify-center active:opacity-75"
+            accessibilityLabel={isTranscribing ? 'Generating transcript...' : 'Re-transcribe audio'}
+            className={cn(
+              'flex-1 py-2 px-3 rounded-md bg-card border border-border flex-row items-center justify-center gap-2 active:opacity-75',
+              isTranscribing && 'opacity-75'
+            )}
           >
+            {isTranscribing ? (
+              <ActivityIndicator
+                size="small"
+                color="#2563eb"
+                style={{ transform: [{ scale: 0.8 }] }}
+              />
+            ) : null}
             <ThemedText type="smallBold" className="text-foreground text-xs font-semibold">
-              Re-transcribe
+              {isTranscribing ? 'Transcribing...' : 'Re-transcribe'}
             </ThemedText>
           </Pressable>
 
           <Pressable
+            disabled={isTranscribing}
             onPress={onClear}
             accessibilityRole="button"
             accessibilityLabel="Clear transcript"
-            className="py-2 px-4 rounded-md bg-card border border-border items-center justify-center active:opacity-75"
+            className={cn(
+              'py-2 px-4 rounded-md bg-card border border-border items-center justify-center active:opacity-75',
+              isTranscribing && 'opacity-50'
+            )}
           >
             <ThemedText type="small" className="text-muted-foreground text-xs">
               Clear

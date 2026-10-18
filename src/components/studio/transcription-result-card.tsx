@@ -38,8 +38,13 @@ export function TranscriptionResultCard({
       <TranscriptionErrorBanner error={transcriptionError} />
 
       {/* Action CTA: Transcribe Button (visible when recorded audio is ready) */}
-      {hasRecordedAudio && !transcription && !isTranscribing ? (
-        <TranscriptionCtaButton onPress={onTranscribe} />
+      {hasRecordedAudio && !transcription ? (
+        <TranscriptionCtaButton
+          onPress={onTranscribe}
+          isLoading={isTranscribing}
+          disabled={isTranscribing}
+          loadingText="Transcribing..."
+        />
       ) : null}
 
       {/* Output Stage (Loading, Result, or Waiting State) */}
