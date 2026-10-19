@@ -2,6 +2,7 @@ import { View } from 'react-native';
 
 import { useAudioPreviewPlayer } from '@/hooks/use-audio-preview-player';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useModelReadiness } from '@/hooks/use-model-readiness';
 import { useTtsBenchmark } from '@/hooks/use-tts-benchmark';
 
 import { TtsActionButtons } from './tts-action-buttons';
@@ -10,9 +11,15 @@ import { TtsHeader } from './tts-header';
 import { TtsInputSection } from './tts-input-section';
 import { TtsMetricsPanel } from './tts-metrics-panel';
 
-export function TtsBenchmarkCard() {
+export interface TtsBenchmarkCardProps {
+  isReady?: boolean;
+}
+
+export function TtsBenchmarkCard({ isReady: externalIsReady }: TtsBenchmarkCardProps = {}) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const { isReady: hookIsReady } = useModelReadiness('tts');
+  const isReady = externalIsReady ?? hookIsReady;
 
   const {
     selectedPresetId,
@@ -63,6 +70,7 @@ export function TtsBenchmarkCard() {
         isPlaying={isPlaying}
         hasResult={lastResult !== null}
         canSynthesize={inputText.trim().length > 0}
+        isReady={isReady}
         onSynthesize={handleSynthesize}
         onPlay={play}
       />

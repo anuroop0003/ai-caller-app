@@ -16,7 +16,7 @@ export function DiagnosticsTtsContent() {
           missingFiles={missingFiles}
         />
       )}
-      <TtsBenchmarkCard />
+      <TtsBenchmarkCard isReady={isReady} />
     </View>
   );
 }

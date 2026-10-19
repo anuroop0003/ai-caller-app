@@ -1,7 +1,5 @@
-import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { Platform, TurboModuleRegistry } from 'react-native';
-
 import { DEFAULT_SPEECH_MODEL } from '@/constants/speechModels';
+import { RuntimeEnvironment } from '@/services/models';
 import type {
   FileStorageSource,
   ModelFileInspection,
@@ -30,14 +28,14 @@ export class ModelFileService {
    * Diagnostic check for native Sherpa-ONNX runtime availability.
    */
   static checkNativeSupport(): NativeSupportDiagnostic {
-    if (Platform.OS === 'web') {
+    if (RuntimeEnvironment.isWeb()) {
       return {
         supported: false,
         reason: 'Web runtime is not supported. Sherpa-ONNX requires an Android/iOS native runtime.',
       };
     }
 
-    if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
+    if (RuntimeEnvironment.isExpoGo()) {
       return {
         supported: false,
         reason:
@@ -45,18 +43,10 @@ export class ModelFileService {
       };
     }
 
-    try {
-      const hasTurboModule = TurboModuleRegistry.get('SherpaOnnx') != null;
-      if (!hasTurboModule) {
-        return {
-          supported: false,
-          reason: 'Native SherpaOnnx TurboModule is not linked in this build.',
-        };
-      }
-    } catch (err) {
+    if (!RuntimeEnvironment.isSherpaNativeSupported()) {
       return {
         supported: false,
-        reason: `Failed to query SherpaOnnx TurboModule: ${err instanceof Error ? err.message : String(err)}`,
+        reason: 'Native SherpaOnnx TurboModule is not linked in this build.',
       };
     }
 
@@ -85,7 +75,14 @@ export class ModelFileService {
       // Ignore and fallback
     }
 
-    return { type: 'asset', path: `models/${model.id}` };
+    const isBundled = await this.isModelBundledInAssets(model.id);
+    if (isBundled) {
+      return { type: 'asset', path: `models/${model.id}` };
+    }
+
+    throw new Error(
+      `Model files for "${model.name}" are missing on disk. Please download the model before initializing speech recognition.`
+    );
   }
 
   /**

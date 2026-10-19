@@ -1,9 +1,7 @@
-import Constants, { ExecutionEnvironment } from 'expo-constants';
-import * as FileSystem from 'expo-file-system/legacy';
-import { Platform, TurboModuleRegistry } from 'react-native';
 import type { TtsEngine } from 'react-native-sherpa-onnx/tts';
 
 import { DEFAULT_TTS_MODEL } from '@/constants/ttsModels';
+import { FsAdapter, RuntimeEnvironment } from '@/services/models';
 import type { TtsModelMetadata, TtsSynthesisResult } from '@/types/tts';
 
 export type { TtsSynthesisResult };
@@ -23,38 +21,29 @@ export class TextToSpeechService {
       return this.isNativeSupported;
     }
 
-    if (Platform.OS === 'web') {
-      this.isNativeSupported = false;
-      return false;
-    }
-
-    if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
-      this.isNativeSupported = false;
-      return false;
-    }
-
-    try {
-      const hasTurboModule = TurboModuleRegistry.get('SherpaOnnx') != null;
-      if (!hasTurboModule) {
-        this.isNativeSupported = false;
-        return false;
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const sherpaTts = require('react-native-sherpa-onnx/tts');
-      this.isNativeSupported = typeof sherpaTts?.createTTS === 'function';
-    } catch {
-      this.isNativeSupported = false;
-    }
-
-    return this.isNativeSupported ?? false;
+    this.isNativeSupported = RuntimeEnvironment.isSherpaNativeSupported();
+    return this.isNativeSupported;
   }
 
   /**
    * Initializes the native Sherpa-ONNX TTS engine instance.
-   * Serializes concurrent calls and preserves active instance for identical modelId.
+   * Validates physical model presence on disk before returning any cached instance or creating a new one.
    */
   static async initialize(model: TtsModelMetadata = DEFAULT_TTS_MODEL): Promise<TtsEngine> {
+    // 1. Enforce verified model presence on disk before returning cached engine
+    const { ModelReadinessService } = await import('@/services/models/modelReadinessService');
+    const readiness = await ModelReadinessService.checkModelReadiness(model.id);
+
+    if (!readiness.isReady) {
+      if (this.activeEngine) {
+        await this.destroy();
+      }
+      throw new Error(
+        `Required TTS model files for "${model.name}" are missing on disk. Please download the model before speech synthesis.`
+      );
+    }
+
+    // 2. Return active cached engine only after confirming files exist
     if (this.activeEngine && this.activeModelId === model.id) {
       return this.activeEngine;
     }
@@ -72,46 +61,21 @@ export class TextToSpeechService {
         await this.destroy();
       }
 
-      // Self-healing check: if the model folder exists in app files but is incomplete (e.g. interrupted copy),
-      // purge it so native SherpaOnnx re-extracts the full assets from the APK.
-      if (FileSystem.documentDirectory) {
-        try {
-          const targetModelDir = `${FileSystem.documentDirectory}models/${model.id}`;
-          const dirInfo = await FileSystem.getInfoAsync(targetModelDir);
-          if (dirInfo.exists) {
-            const tokensInfo = await FileSystem.getInfoAsync(`${targetModelDir}/tokens.txt`);
-            if (!tokensInfo.exists) {
-              console.warn(
-                `[TextToSpeechService] Incomplete model directory detected at ${targetModelDir}. Purging to re-extract from assets.`
-              );
-              await FileSystem.deleteAsync(targetModelDir, { idempotent: true });
-            }
-          }
-        } catch {
-          // Ignore filesystem query errors and let native resolver proceed
-        }
-      }
-
-      let modelPathConfig: { type: 'file' | 'asset'; path: string } = {
-        type: 'asset',
-        path: `models/${model.id}`,
-      };
-
-      if (FileSystem.documentDirectory) {
-        try {
-          const targetModelDir = `${FileSystem.documentDirectory}models/${model.id}`;
-          const onnxInfo = await FileSystem.getInfoAsync(
-            `${targetModelDir}/ml_IN-meera-medium.onnx`
-          );
-          if (onnxInfo.exists) {
-            modelPathConfig = {
-              type: 'file',
-              path: targetModelDir.replace(/^file:\/\//, ''),
-            };
-          }
-        } catch {
-          // Fallback to asset
-        }
+      let modelPathConfig: { type: 'file' | 'asset'; path: string };
+      if (readiness.storageLocation === 'app_storage' && readiness.resolvedPath) {
+        modelPathConfig = {
+          type: 'file',
+          path: readiness.resolvedPath.replace(/^file:\/\//, '').replace(/\/+$/, ''),
+        };
+      } else if (readiness.storageLocation === 'bundled_asset') {
+        modelPathConfig = {
+          type: 'asset',
+          path: `models/${model.id}`,
+        };
+      } else {
+        throw new Error(
+          `Model storage location for "${model.name}" is invalid or missing on disk.`
+        );
       }
 
       // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -165,7 +129,7 @@ export class TextToSpeechService {
           const rtf = durationSec > 0 ? synthesisTimeMs / (durationSec * 1000) : 0;
 
           // Unique temp file path in cache directory to prevent collision with active players
-          const cacheDir = FileSystem.cacheDirectory ?? '';
+          const cacheDir = FsAdapter.getCacheDirectory();
           const filename = `tts_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.wav`;
           const fullUri = `${cacheDir}${filename}`;
           const rawCleanPath = fullUri.startsWith('file://')
@@ -194,6 +158,12 @@ export class TextToSpeechService {
    * Releases active TTS engine instance and native C++ resources.
    */
   static async destroy(): Promise<void> {
+    try {
+      await this.synthesisQueue;
+    } catch {
+      // Ignore in-flight synthesis error
+    }
+
     if (this.activeEngine) {
       try {
         await this.activeEngine.destroy();

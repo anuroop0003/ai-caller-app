@@ -56,6 +56,20 @@ export class FsAdapter {
   }
 
   /**
+   * Resolves cache directory for temporary files.
+   */
+  static getCacheDirectory(): string {
+    const fs = this.getFs();
+    if (fs?.cacheDirectory) {
+      return fs.cacheDirectory;
+    }
+    if (typeof process !== 'undefined' && Boolean(process.versions?.node)) {
+      return '/data/user/0/com.anonymous.aicallerapp/cache/';
+    }
+    return '';
+  }
+
+  /**
    * Queries free disk storage on the target device, defaulting to an 8 GB safety fallback.
    */
   static async getFreeDiskStorageAsync(): Promise<number> {

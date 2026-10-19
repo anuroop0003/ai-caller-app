@@ -13,6 +13,7 @@ export interface SampleCardActionsProps {
   isTranscribing: boolean;
   isAnyTranscribing?: boolean;
   isPlaybackSupported?: boolean;
+  isReady?: boolean;
   onTogglePlay: (sample: AudioTestSample) => void;
   onRunTest: (sample: AudioTestSample) => void;
 }
@@ -23,6 +24,7 @@ export function SampleCardActions({
   isTranscribing,
   isAnyTranscribing = false,
   isPlaybackSupported = true,
+  isReady = true,
   onTogglePlay,
   onRunTest,
 }: SampleCardActionsProps) {
@@ -60,15 +62,19 @@ export function SampleCardActions({
 
       {/* Live Benchmark Transcribe Button */}
       <Pressable
-        disabled={isTranscribing || isAnyTranscribing}
+        disabled={isTranscribing || isAnyTranscribing || !isReady}
         onPress={() => onRunTest(sample)}
         accessibilityRole="button"
         accessibilityLabel={
-          isTranscribing ? 'Transcribing live audio' : 'Run live transcription benchmark'
+          !isReady
+            ? 'Speech model missing on disk'
+            : isTranscribing
+              ? 'Transcribing live audio'
+              : 'Run live transcription benchmark'
         }
         className={cn(
           'flex-1 flex-row items-center justify-center py-2 px-3 rounded-md bg-primary active:opacity-80',
-          (isTranscribing || isAnyTranscribing) && 'opacity-60'
+          (isTranscribing || isAnyTranscribing || !isReady) && 'opacity-60'
         )}
       >
         {isTranscribing ? (
@@ -78,10 +84,15 @@ export function SampleCardActions({
             style={{ marginRight: 6, transform: [{ scale: 0.8 }] }}
           />
         ) : (
-          <Ionicons name="flash" size={16} color={primaryForeground} style={{ marginRight: 4 }} />
+          <Ionicons
+            name={!isReady ? 'warning-outline' : 'flash'}
+            size={16}
+            color={primaryForeground}
+            style={{ marginRight: 4 }}
+          />
         )}
         <ThemedText type="smallBold" className="text-primary-foreground">
-          {isTranscribing ? 'Transcribing...' : 'Transcribe Live'}
+          {!isReady ? 'Model Missing' : isTranscribing ? 'Transcribing...' : 'Transcribe Live'}
         </ThemedText>
       </Pressable>
     </View>

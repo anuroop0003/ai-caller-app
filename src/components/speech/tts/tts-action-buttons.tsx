@@ -11,6 +11,7 @@ export interface TtsActionButtonsProps {
   isPlaying: boolean;
   hasResult: boolean;
   canSynthesize: boolean;
+  isReady?: boolean;
   onSynthesize: () => void;
   onPlay: () => void;
 }
@@ -20,6 +21,7 @@ export function TtsActionButtons({
   isPlaying,
   hasResult,
   canSynthesize,
+  isReady = true,
   onSynthesize,
   onPlay,
 }: TtsActionButtonsProps) {
@@ -61,13 +63,13 @@ export function TtsActionButtons({
       {/* Synthesize Button */}
       <Pressable
         key="tts-synthesize-btn"
-        disabled={isSynthesizing || !canSynthesize}
+        disabled={isSynthesizing || !canSynthesize || !isReady}
         onPress={onSynthesize}
         accessibilityRole="button"
-        accessibilityLabel="Synthesize speech offline"
+        accessibilityLabel={!isReady ? 'TTS model missing on disk' : 'Synthesize speech offline'}
         className={cn(
           'flex-1 flex-row items-center justify-center py-2 px-3 rounded-md bg-primary active:opacity-80',
-          (isSynthesizing || !canSynthesize) && 'opacity-60'
+          (isSynthesizing || !canSynthesize || !isReady) && 'opacity-60'
         )}
       >
         {isSynthesizing ? (
@@ -78,14 +80,14 @@ export function TtsActionButtons({
           />
         ) : (
           <Ionicons
-            name="sparkles"
+            name={!isReady ? 'warning-outline' : 'sparkles'}
             size={16}
             color={primaryForeground}
             style={{ marginRight: 4 }}
           />
         )}
         <ThemedText type="smallBold" className="text-primary-foreground">
-          {isSynthesizing ? 'Generating...' : 'Synthesize Speech'}
+          {!isReady ? 'Model Missing' : isSynthesizing ? 'Generating...' : 'Synthesize Speech'}
         </ThemedText>
       </Pressable>
     </View>

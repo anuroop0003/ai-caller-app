@@ -127,9 +127,41 @@ export class ModelFileService {
   }
 
   /**
-   * Safely deletes all files in the model package directory.
+   * Safely unloads native engines, deletes all files in the model package directory,
+   * and notifies readiness subscribers.
    */
   static async deleteModel(model: UnifiedModelPackage): Promise<void> {
+    // 1. Coordinated lifecycle teardown: stop active inference and destroy native engines
+    if (model.category === 'stt') {
+      try {
+        const { SpeechRecognitionService } =
+          await import('@/services/speech/speechRecognitionService');
+        await SpeechRecognitionService.destroy();
+      } catch (err) {
+        console.warn(`[ModelFileService] Failed to unload STT engine for ${model.id}:`, err);
+      }
+    } else if (model.category === 'tts') {
+      try {
+        const { TextToSpeechService } = await import('@/services/speech/textToSpeechService');
+        await TextToSpeechService.destroy();
+      } catch (err) {
+        console.warn(`[ModelFileService] Failed to unload TTS engine for ${model.id}:`, err);
+      }
+    } else if (model.category === 'llm') {
+      try {
+        const { callerStore } = await import('@/stores/callerStore');
+        const activeGen = callerStore.getResponseGenerator();
+        if (activeGen.id.includes(model.id) || activeGen.id.includes('qwen')) {
+          const { defaultDialogueEngine } =
+            await import('@/services/dialogue/callerDialogueEngine');
+          callerStore.setResponseGenerator(defaultDialogueEngine);
+        }
+      } catch (err) {
+        console.warn(`[ModelFileService] Failed to reset LLM response generator:`, err);
+      }
+    }
+
+    // 2. Delete model files on disk
     const modelDir = this.getModelDir(model);
     try {
       const info = await FsAdapter.getInfoAsync(modelDir);
@@ -138,6 +170,14 @@ export class ModelFileService {
       }
     } catch (err) {
       console.warn(`[ModelFileService] Failed to delete ${model.id}:`, err);
+    }
+
+    // 3. Notify readiness subscribers of model invalidation
+    try {
+      const { ModelReadinessService } = await import('./modelReadinessService');
+      ModelReadinessService.notifyModelChanged(model.id);
+    } catch (err) {
+      console.warn(`[ModelFileService] Failed to notify readiness change:`, err);
     }
   }
 }

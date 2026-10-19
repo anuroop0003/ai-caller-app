@@ -194,3 +194,63 @@ test('5. Internal Model Service Utilities', async (t) => {
     assert.equal(isExtractingAfter, false);
   });
 });
+
+test('6. Model Lifecycle, Coordinated Deletion & Readiness Synchronization', async (t) => {
+  const { SpeechRecognitionService } = await import('@/services/speech/speechRecognitionService');
+  const { TextToSpeechService } = await import('@/services/speech/textToSpeechService');
+
+  await t.test(
+    'SpeechRecognitionService.initialize rejects and prevents execution when model files are missing on disk',
+    async () => {
+      // In Node test runner without downloaded files, initialization must fail cleanly
+      await assert.rejects(
+        () => SpeechRecognitionService.initialize(),
+        /Required STT model files.*are missing on disk/
+      );
+    }
+  );
+
+  await t.test(
+    'TextToSpeechService.initialize rejects and prevents execution when model files are missing on disk',
+    async () => {
+      await assert.rejects(
+        () => TextToSpeechService.initialize(),
+        /Required TTS model files.*are missing on disk/
+      );
+    }
+  );
+
+  await t.test(
+    'ModelFileService.deleteModel unloads STT engine and broadcasts readiness invalidation',
+    async () => {
+      let notifiedModelId: string | undefined;
+      const unsubscribe = ModelReadinessService.subscribe((modelId) => {
+        notifiedModelId = modelId;
+      });
+
+      try {
+        await ModelFileService.deleteModel(STT_INDIC_CONFORMER_MODEL);
+        assert.equal(notifiedModelId, STT_INDIC_CONFORMER_MODEL.id);
+      } finally {
+        unsubscribe();
+      }
+    }
+  );
+
+  await t.test(
+    'ModelFileService.deleteModel unloads TTS engine and broadcasts readiness invalidation',
+    async () => {
+      let notifiedModelId: string | undefined;
+      const unsubscribe = ModelReadinessService.subscribe((modelId) => {
+        notifiedModelId = modelId;
+      });
+
+      try {
+        await ModelFileService.deleteModel(TTS_PIPER_MEERA_MODEL);
+        assert.equal(notifiedModelId, TTS_PIPER_MEERA_MODEL.id);
+      } finally {
+        unsubscribe();
+      }
+    }
+  );
+});

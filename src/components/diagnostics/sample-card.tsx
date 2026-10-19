@@ -12,6 +12,7 @@ export interface SampleCardProps {
   isTranscribing: boolean;
   isAnyTranscribing?: boolean;
   isPlaybackSupported?: boolean;
+  isReady?: boolean;
   liveTranscript?: string | null;
   liveLatencyMs?: number | null;
   liveTokensCount?: number | null;
@@ -25,6 +26,7 @@ export function SampleCard({
   isTranscribing,
   isAnyTranscribing = false,
   isPlaybackSupported = true,
+  isReady = true,
   liveTranscript,
   liveLatencyMs,
   liveTokensCount,
@@ -48,6 +50,7 @@ export function SampleCard({
         isTranscribing={isTranscribing}
         isAnyTranscribing={isAnyTranscribing}
         isPlaybackSupported={isPlaybackSupported}
+        isReady={isReady}
         onTogglePlay={onTogglePlay}
         onRunTest={onRunTest}
       />

@@ -101,6 +101,20 @@ export function useModelReadiness(modelOrCategory: UnifiedModelPackage | ModelCa
     };
   }, [model.id, checkReadiness]);
 
+  // Re-check readiness immediately when model deletion or cache invalidation events occur
+  useEffect(() => {
+    const unsubscribe = ModelReadinessService.subscribe((changedModelId) => {
+      if (!isMountedRef.current) return;
+      if (!changedModelId || changedModelId === model.id || changedModelId === model.category) {
+        void checkReadiness();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [model.id, model.category, checkReadiness]);
+
   return {
     readiness,
     isLoading,

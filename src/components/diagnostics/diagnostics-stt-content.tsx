@@ -3,11 +3,11 @@ import { View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { useDiagnostics, type UseDiagnosticsResult } from '@/hooks/use-diagnostics';
 
+import { MissingModelFilesCard } from '@/components/models';
+import { useModelReadiness } from '@/hooks/use-model-readiness';
 import { DiagnosticsAlertBanner } from './diagnostics-alert-banner';
 import { LanguageFilterTabs } from './language-filter-tabs';
 import { SampleCard } from './sample-card';
-import { MissingModelFilesCard } from '@/components/models';
-import { useModelReadiness } from '@/hooks/use-model-readiness';
 
 export interface DiagnosticsSttContentProps {
   diagnosticsHook?: UseDiagnosticsResult;
@@ -101,6 +101,7 @@ export function DiagnosticsSttContent({
             isTranscribing={isTranscribing && transcribingSampleId === sample.id}
             isAnyTranscribing={isTranscribing}
             isPlaybackSupported={audioPlayer.isPlaybackSupported}
+            isReady={isReady}
             liveTranscript={liveResults[sample.id]?.transcription.text}
             liveLatencyMs={liveResults[sample.id]?.latencyMs}
             liveTokensCount={liveResults[sample.id]?.transcription.tokens.length}

@@ -7,7 +7,34 @@ import { RuntimeEnvironment } from './internal/runtimeEnvironment';
 import { ModelFileService } from './modelFileService';
 import { ModelRegistry } from './modelRegistry';
 
+export type ReadinessChangeListener = (modelId?: string) => void;
+
 export class ModelReadinessService {
+  private static readinessListeners = new Set<ReadinessChangeListener>();
+
+  /**
+   * Subscribes to model readiness change events (e.g., deletions, downloads, cache evictions).
+   */
+  static subscribe(listener: ReadinessChangeListener): () => void {
+    this.readinessListeners.add(listener);
+    return () => {
+      this.readinessListeners.delete(listener);
+    };
+  }
+
+  /**
+   * Broadcasts a model change or deletion event to all subscribers.
+   */
+  static notifyModelChanged(modelId?: string): void {
+    this.readinessListeners.forEach((cb) => {
+      try {
+        cb(modelId);
+      } catch (e) {
+        console.error('[ModelReadinessService] Listener error:', e);
+      }
+    });
+  }
+
   /**
    * Diagnostic check for native Sherpa-ONNX runtime capability.
    */

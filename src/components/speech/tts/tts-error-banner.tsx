@@ -19,7 +19,7 @@ export function TtsErrorBanner({ message, severity = 'error' }: TtsErrorBannerPr
     <View
       className={cn(
         'p-2.5 rounded-md flex-row items-center gap-2 border',
-        isError ? 'bg-destructive/10 border-destructive/30' : 'bg-amber-500/10 border-amber-500/30'
+        isError ? 'bg-red-500/10 border-red-500/30' : 'bg-amber-500/10 border-amber-500/30'
       )}
     >
       <Ionicons
@@ -31,7 +31,7 @@ export function TtsErrorBanner({ message, severity = 'error' }: TtsErrorBannerPr
         type="small"
         className={cn(
           'text-xs flex-1',
-          isError ? 'text-destructive' : 'text-amber-600 dark:text-amber-400'
+          isError ? 'text-red-700 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'
         )}
       >
         {message}

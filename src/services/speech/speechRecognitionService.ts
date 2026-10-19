@@ -1,9 +1,7 @@
-import Constants, { ExecutionEnvironment } from 'expo-constants';
-import * as FileSystem from 'expo-file-system/legacy';
-import { Platform, TurboModuleRegistry } from 'react-native';
 import type { SttEngine } from 'react-native-sherpa-onnx/stt';
 
 import { DEFAULT_SPEECH_MODEL } from '@/constants/speechModels';
+import { FsAdapter, RuntimeEnvironment } from '@/services/models';
 import type { SpeechModelMetadata, SttTranscriptionResult } from '@/types/speech';
 import { ModelFileService } from './modelFileService';
 
@@ -23,40 +21,31 @@ export class SpeechRecognitionService {
       return this.isNativeSupported;
     }
 
-    if (Platform.OS === 'web') {
-      this.isNativeSupported = false;
-      return false;
-    }
-
-    // Expo Go does not bundle custom C++ TurboModules
-    if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
-      this.isNativeSupported = false;
-      return false;
-    }
-
-    try {
-      const hasTurboModule = TurboModuleRegistry.get('SherpaOnnx') != null;
-      if (!hasTurboModule) {
-        this.isNativeSupported = false;
-        return false;
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const sherpa = require('react-native-sherpa-onnx/stt');
-      this.isNativeSupported = typeof sherpa?.createSTT === 'function';
-    } catch {
-      this.isNativeSupported = false;
-    }
-
-    return this.isNativeSupported ?? false;
+    this.isNativeSupported = RuntimeEnvironment.isSherpaNativeSupported();
+    return this.isNativeSupported;
   }
+
+  private static activeTranscription: Promise<unknown> | null = null;
 
   /**
    * Initializes the native Sherpa-ONNX STT engine instance for runtime recognition.
-   * Serializes concurrent initialization calls and preserves the active engine when
-   * initializing the same model.
+   * Validates physical model presence on disk before returning any cached instance or creating a new one.
    */
   static async initialize(model: SpeechModelMetadata = DEFAULT_SPEECH_MODEL): Promise<SttEngine> {
+    // 1. Enforce verified model presence on disk before returning cached engine
+    const { ModelReadinessService } = await import('@/services/models/modelReadinessService');
+    const readiness = await ModelReadinessService.checkModelReadiness(model.id);
+
+    if (!readiness.isReady) {
+      if (this.activeEngine) {
+        await this.destroy();
+      }
+      throw new Error(
+        `Required STT model files for "${model.name}" are missing on disk. Please download the model before initializing speech recognition.`
+      );
+    }
+
+    // 2. Return active cached engine only after confirming files exist
     if (this.activeEngine && this.activeModelId === model.id) {
       return this.activeEngine;
     }
@@ -74,7 +63,20 @@ export class SpeechRecognitionService {
         await this.destroy();
       }
 
-      const modelPathConfig = await ModelFileService.resolveModelPathConfig(model);
+      let modelPathConfig: { type: 'file' | 'asset'; path: string };
+      if (readiness.storageLocation === 'app_storage' && readiness.resolvedPath) {
+        modelPathConfig = {
+          type: 'file',
+          path: readiness.resolvedPath.replace(/^file:\/\//, '').replace(/\/+$/, ''),
+        };
+      } else if (readiness.storageLocation === 'bundled_asset') {
+        modelPathConfig = {
+          type: 'asset',
+          path: `models/${model.id}`,
+        };
+      } else {
+        modelPathConfig = await ModelFileService.resolveModelPathConfig(model);
+      }
 
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { createSTT } = require('react-native-sherpa-onnx/stt');
@@ -102,19 +104,21 @@ export class SpeechRecognitionService {
    * Strips file:// URI schemes to raw filesystem paths for native File reader compatibility.
    */
   static async transcribeFile(filePath: string): Promise<SttTranscriptionResult> {
-    if (!this.activeEngine) {
-      await this.initialize();
-    }
-
-    if (!this.activeEngine) {
-      throw new Error('Failed to initialize speech recognition engine.');
-    }
+    const engine = await this.initialize();
 
     const cleanPath = filePath.startsWith('file://')
       ? decodeURI(filePath.replace(/^file:\/\//, ''))
       : filePath;
 
-    return this.activeEngine.transcribeFile(cleanPath);
+    const op = engine.transcribeFile(cleanPath);
+    this.activeTranscription = op;
+    try {
+      return await op;
+    } finally {
+      if (this.activeTranscription === op) {
+        this.activeTranscription = null;
+      }
+    }
   }
 
   /**
@@ -124,15 +128,17 @@ export class SpeechRecognitionService {
     samples: number[],
     sampleRate: number
   ): Promise<SttTranscriptionResult> {
-    if (!this.activeEngine) {
-      await this.initialize();
-    }
+    const engine = await this.initialize();
 
-    if (!this.activeEngine) {
-      throw new Error('Failed to initialize speech recognition engine.');
+    const op = engine.transcribeSamples(samples, sampleRate);
+    this.activeTranscription = op;
+    try {
+      return await op;
+    } finally {
+      if (this.activeTranscription === op) {
+        this.activeTranscription = null;
+      }
     }
-
-    return this.activeEngine.transcribeSamples(samples, sampleRate);
   }
 
   /**
@@ -153,7 +159,7 @@ export class SpeechRecognitionService {
       ? decodeURI(recordedUri.replace(/^file:\/\//, ''))
       : recordedUri;
 
-    const tempWavPath = `${FileSystem.cacheDirectory ?? ''}call_stt_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.wav`;
+    const tempWavPath = `${FsAdapter.getCacheDirectory()}call_stt_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.wav`;
     const cleanOutputPath = tempWavPath.startsWith('file://')
       ? decodeURI(tempWavPath.replace(/^file:\/\//, ''))
       : tempWavPath;
@@ -186,9 +192,9 @@ export class SpeechRecognitionService {
     } finally {
       // Ensure temp WAV is deleted
       try {
-        const info = await FileSystem.getInfoAsync(tempWavPath);
+        const info = await FsAdapter.getInfoAsync(tempWavPath);
         if (info.exists) {
-          await FileSystem.deleteAsync(tempWavPath, { idempotent: true });
+          await FsAdapter.deleteAsync(tempWavPath, { idempotent: true });
         }
       } catch {
         // Ignore deletion cleanup error
@@ -200,6 +206,14 @@ export class SpeechRecognitionService {
    * Destroys active engine instance and releases native resources.
    */
   static async destroy(): Promise<void> {
+    if (this.activeTranscription) {
+      try {
+        await this.activeTranscription;
+      } catch {
+        // Ignore in-flight transcription error
+      }
+    }
+
     if (this.activeEngine) {
       try {
         await this.activeEngine.destroy();
