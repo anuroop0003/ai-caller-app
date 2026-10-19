@@ -35,9 +35,9 @@
           "imageWidth": 76
         }
       ],
-      "./plugins/withSherpaModels",
       "expo-audio",
-      "expo-asset"
+      "expo-asset",
+      "llama.rn"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -1,4 +1,5 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Platform, TurboModuleRegistry } from 'react-native';
 import type { SttEngine } from 'react-native-sherpa-onnx/stt';
 
@@ -132,6 +133,67 @@ export class SpeechRecognitionService {
     }
 
     return this.activeEngine.transcribeSamples(samples, sampleRate);
+  }
+
+  /**
+   * Converts a recorded audio file (e.g. M4A/AAC from Expo Audio) to 16kHz WAV
+   * and transcribes it using the active on-device Sherpa-ONNX model.
+   * Intermediate 16kHz WAV file is cleaned up after completion.
+   */
+  static async transcribeRecordedAudio(recordedUri: string): Promise<SttTranscriptionResult> {
+    if (!recordedUri) {
+      throw new Error('No audio file URI provided for transcription.');
+    }
+
+    if (!this.activeEngine) {
+      await this.initialize();
+    }
+
+    const cleanInputPath = recordedUri.startsWith('file://')
+      ? decodeURI(recordedUri.replace(/^file:\/\//, ''))
+      : recordedUri;
+
+    const tempWavPath = `${FileSystem.cacheDirectory ?? ''}call_stt_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.wav`;
+    const cleanOutputPath = tempWavPath.startsWith('file://')
+      ? decodeURI(tempWavPath.replace(/^file:\/\//, ''))
+      : tempWavPath;
+
+    try {
+      let result: SttTranscriptionResult;
+
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const sherpaAudio = require('react-native-sherpa-onnx/audio');
+        if (typeof sherpaAudio?.convertAudioToWav16k === 'function') {
+          await sherpaAudio.convertAudioToWav16k(cleanInputPath, cleanOutputPath);
+          result = await this.transcribeFile(cleanOutputPath);
+        } else {
+          throw new Error('Native audio conversion unavailable.');
+        }
+      } catch (convErr) {
+        // Fallback: try direct PCM float samples decoding
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const sherpaAudio = require('react-native-sherpa-onnx/audio');
+        if (typeof sherpaAudio?.decodeAudioFileToFloatSamples === 'function') {
+          const decoded = await sherpaAudio.decodeAudioFileToFloatSamples(cleanInputPath, 16000);
+          result = await this.transcribeSamples(decoded.samples, decoded.sampleRate || 16000);
+        } else {
+          throw convErr;
+        }
+      }
+
+      return result;
+    } finally {
+      // Ensure temp WAV is deleted
+      try {
+        const info = await FileSystem.getInfoAsync(tempWavPath);
+        if (info.exists) {
+          await FileSystem.deleteAsync(tempWavPath, { idempotent: true });
+        }
+      } catch {
+        // Ignore deletion cleanup error
+      }
+    }
   }
 
   /**

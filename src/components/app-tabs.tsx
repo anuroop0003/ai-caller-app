@@ -18,6 +18,10 @@ export function AppTabs() {
         <NativeTabs.Trigger.Label>Studio</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="waveform" md="graphic_eq" />
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="call">
+        <NativeTabs.Trigger.Label>AI Call</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="phone.bubble.left.fill" md="phone_in_talk" />
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="diagnostics">
         <NativeTabs.Trigger.Label>Diagnostics</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="waveform.badge.magnifyingglass" md="hearing" />

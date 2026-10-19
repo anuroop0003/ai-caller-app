@@ -1,3 +1,5 @@
+import type { ModelFileSpecification } from './speech';
+
 export interface TtsModelMetadata {
   readonly id: string;
   readonly name: string;
@@ -7,6 +9,8 @@ export interface TtsModelMetadata {
   readonly gender: 'female' | 'male';
   readonly architecture: 'vits';
   readonly sampleRate: number;
+  readonly modelType?: 'vits';
+  readonly files: readonly ModelFileSpecification[];
 }
 
 export interface TtsSynthesisResult {

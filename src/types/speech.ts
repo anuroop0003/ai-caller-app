@@ -1,6 +1,6 @@
 export interface ModelFileSpecification {
   readonly name: string;
-  readonly type: 'int8' | 'fp32' | 'tokens';
+  readonly type: 'int8' | 'fp32' | 'tokens' | 'config' | 'onnx' | 'espeak';
   readonly description: string;
   readonly expectedSizeBytes: number;
   readonly isRequired: boolean;
@@ -27,7 +27,7 @@ export interface ModelPathConfig {
 
 export interface ModelFileInspection {
   readonly name: string;
-  readonly type: 'int8' | 'fp32' | 'tokens';
+  readonly type: 'int8' | 'fp32' | 'tokens' | 'config' | 'onnx' | 'espeak';
   readonly description: string;
   readonly exists: boolean;
   readonly sizeBytes?: number;

@@ -10,6 +10,7 @@ import type {
   ModelPathConfig,
   SpeechModelMetadata,
 } from '@/types/speech';
+import type { TtsModelMetadata } from '@/types/tts';
 
 export type {
   FileStorageSource,
@@ -63,11 +64,27 @@ export class ModelFileService {
   }
 
   /**
-   * Resolves the native asset ModelPathConfig for Sherpa-ONNX.
+   * Resolves the native ModelPathConfig for Sherpa-ONNX, prioritizing verified downloaded
+   * storage, falling back to APK bundled assets.
    */
   static async resolveModelPathConfig(
     model: SpeechModelMetadata = DEFAULT_SPEECH_MODEL
   ): Promise<ModelPathConfig> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const fs = require('expo-file-system/legacy');
+      if (fs?.documentDirectory) {
+        const localDir = `${fs.documentDirectory}models/${model.id}`;
+        const cleanPath = localDir.replace(/^file:\/\//, '');
+        const info = await fs.getInfoAsync(`${localDir}/model.int8.onnx`);
+        if (info.exists) {
+          return { type: 'file', path: cleanPath };
+        }
+      }
+    } catch {
+      // Ignore and fallback
+    }
+
     return { type: 'asset', path: `models/${model.id}` };
   }
 
@@ -98,7 +115,7 @@ export class ModelFileService {
    * Inspects model status against native runtime support and packaged APK assets.
    */
   static async inspectModelFiles(
-    model: SpeechModelMetadata = DEFAULT_SPEECH_MODEL
+    model: SpeechModelMetadata | TtsModelMetadata = DEFAULT_SPEECH_MODEL
   ): Promise<ModelInspectionResult> {
     const nativeCheck = this.checkNativeSupport();
 

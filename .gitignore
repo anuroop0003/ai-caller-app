@@ -30,6 +30,7 @@ expo-env.d.ts
 *.bin
 *.pt
 *.safetensors
+*.gguf
 *.tar.gz
 *.tar.bz2
 *.tar

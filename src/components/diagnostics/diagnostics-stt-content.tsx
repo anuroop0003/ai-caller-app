@@ -6,6 +6,8 @@ import { useDiagnostics, type UseDiagnosticsResult } from '@/hooks/use-diagnosti
 import { DiagnosticsAlertBanner } from './diagnostics-alert-banner';
 import { LanguageFilterTabs } from './language-filter-tabs';
 import { SampleCard } from './sample-card';
+import { MissingModelFilesCard } from '@/components/models';
+import { useModelReadiness } from '@/hooks/use-model-readiness';
 
 export interface DiagnosticsSttContentProps {
   diagnosticsHook?: UseDiagnosticsResult;
@@ -16,6 +18,7 @@ export function DiagnosticsSttContent({
 }: DiagnosticsSttContentProps = {}) {
   const internalHook = useDiagnostics();
   const hook = externalHook ?? internalHook;
+  const { isReady, missingFiles, readiness } = useModelReadiness('stt');
 
   const {
     activeFilter,
@@ -35,6 +38,15 @@ export function DiagnosticsSttContent({
 
   return (
     <View className="gap-3">
+      {/* Model Readiness Guard */}
+      {!isReady && missingFiles.length > 0 && (
+        <MissingModelFilesCard
+          category="stt"
+          modelName={readiness?.modelId ?? 'Sherpa-ONNX IndicConformer'}
+          missingFiles={missingFiles}
+        />
+      )}
+
       {/* Language Filter Tabs */}
       <LanguageFilterTabs
         filterTabs={filterTabs}

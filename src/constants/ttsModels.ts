@@ -13,6 +13,41 @@ export const PIPER_MEERA_ML_MODEL: TtsModelMetadata = {
   gender: 'female',
   architecture: 'vits',
   sampleRate: 22050,
+  modelType: 'vits',
+  files: [
+    {
+      name: 'ml_IN-meera-medium.onnx',
+      type: 'onnx',
+      description: 'Piper VITS Malayalam neural acoustic weights (Medium fidelity)',
+      expectedSizeBytes: 63632970,
+      isRequired: true,
+      bundledByDefault: true,
+    },
+    {
+      name: 'ml_IN-meera-medium.onnx.json',
+      type: 'config',
+      description: 'Audio hyperparameters, phoneme mapping, and sample rate config',
+      expectedSizeBytes: 3182,
+      isRequired: true,
+      bundledByDefault: true,
+    },
+    {
+      name: 'tokens.txt',
+      type: 'tokens',
+      description: 'Piper phoneme and punctuation token table',
+      expectedSizeBytes: 968,
+      isRequired: true,
+      bundledByDefault: true,
+    },
+    {
+      name: 'espeak-ng-data',
+      type: 'espeak',
+      description: 'eSpeak-ng pronunciation lexicon and Malayalam phonemizer data',
+      expectedSizeBytes: 19542000,
+      isRequired: true,
+      bundledByDefault: true,
+    },
+  ],
 } as const;
 
 export const DEFAULT_TTS_MODEL = PIPER_MEERA_ML_MODEL;

@@ -1,80 +1,69 @@
+import { useState } from 'react';
 import { View } from 'react-native';
+import { router } from 'expo-router';
 
-import { useModelInspection } from '@/hooks/use-model-inspection';
-import type { SpeechModelMetadata } from '@/types/speech';
+import { ThemedText } from '@/components/themed-text';
+import { ModelStatusCard } from '@/components/models';
+import type { ModelCategory } from '@/constants/models';
+import { ModelRegistry } from '@/services/models';
 import { cn } from '@/utils/cn';
 
-import { ModelErrorBanner } from './model-error-banner';
-import { ModelFilesSection } from './model-files-section';
-import { ModelHeaderSection } from './model-header-section';
-import { ModelSpecsCard } from './model-specs-card';
+import { ModelCategoryTabs } from './model-category-tabs';
 
 export interface ModelDetailsContentProps {
-  model?: SpeechModelMetadata;
-  inspectionHook?: ReturnType<typeof useModelInspection>;
+  initialCategory?: ModelCategory;
   className?: string;
 }
 
 export function ModelDetailsContent({
-  model,
-  inspectionHook: externalHook,
+  initialCategory = 'stt',
   className,
-}: ModelDetailsContentProps) {
-  const internalHook = useModelInspection(model);
-  const hook = externalHook ?? internalHook;
+}: ModelDetailsContentProps = {}) {
+  const [activeCategory, setActiveCategory] = useState<ModelCategory>(initialCategory);
 
-  const {
-    model: activeModel,
-    loading,
-    refreshing = false,
-    inspection,
-    error,
-    currentStatus,
-    displayedFiles,
-    storageSourceLabel,
-    folderContentsTitle,
-    refresh,
-  } = hook;
+  const modelsForCategory = ModelRegistry.getModelsByCategory(activeCategory);
 
-  const isInstalled = currentStatus === 'installed' || currentStatus === 'validated';
-  const statusLabel =
-    loading && !inspection
-      ? 'Checking...'
-      : isInstalled
-        ? 'Installed'
-        : currentStatus === 'loading'
-          ? 'Checking...'
-          : 'Not installed';
+  const handleTestCategory = (category: ModelCategory) => {
+    switch (category) {
+      case 'stt':
+        router.navigate({ pathname: '/diagnostics', params: { tab: 'stt' } });
+        break;
+      case 'tts':
+        router.navigate({ pathname: '/diagnostics', params: { tab: 'tts' } });
+        break;
+      case 'llm':
+        router.navigate({ pathname: '/diagnostics', params: { tab: 'llm' } });
+        break;
+    }
+  };
 
   return (
-    <View className={cn('bg-card border border-border rounded-md p-4 gap-4 shadow-sm', className)}>
-      {/* Top row: Title & Active Badge */}
-      <ModelHeaderSection
-        name={activeModel?.name}
-        language={activeModel?.language}
-        architecture={activeModel?.architecture}
-        isInstalled={isInstalled}
-        statusLabel={statusLabel}
-      />
+    <View className={cn('gap-4', className)}>
+      {/* Category Tabs: STT, TTS, LLM */}
+      <ModelCategoryTabs activeCategory={activeCategory} onSelectCategory={setActiveCategory} />
 
-      {/* Error Banner if inspection or filesystem failure */}
-      <ModelErrorBanner error={error ?? inspection?.error} />
+      {/* Explanatory Banner */}
+      <View className="px-3.5 py-2.5 rounded-xl bg-secondary/50 border border-border/60">
+        <ThemedText type="small" className="text-muted-foreground text-xs leading-4">
+          {activeCategory === 'stt' &&
+            'Manage offline Malayalam Conformer speech recognition models downloaded from Hugging Face.'}
+          {activeCategory === 'tts' &&
+            'Manage offline Piper VITS neural speech synthesis and eSpeak-ng phonemizer assets.'}
+          {activeCategory === 'llm' &&
+            'Select and download quantized GGUF conversational models for on-device phone dialogue inference.'}
+        </ThemedText>
+      </View>
 
-      {/* Sherpa-ONNX metadata banner */}
-      <ModelSpecsCard
-        modelType={activeModel?.modelType}
-        sampleRate={activeModel?.sampleRate}
-        storageSourceLabel={storageSourceLabel}
-      />
-
-      {/* Files in /models folder */}
-      <ModelFilesSection
-        title={folderContentsTitle}
-        files={displayedFiles}
-        loading={loading && !inspection}
-        refreshing={refreshing}
-        onRefresh={refresh}
-      />
+      {/* Models List for Active Tab */}
+      <View className="gap-4">
+        {modelsForCategory.map((model) => (
+          <ModelStatusCard
+            key={model.id}
+            model={model}
+            onTestModel={() => handleTestCategory(activeCategory)}
+          />
+        ))}
+      </View>
     </View>
   );
 }

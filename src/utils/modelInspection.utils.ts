@@ -1,4 +1,5 @@
 import type { ModelInspectionResult, SpeechModelMetadata } from '@/types/speech';
+import type { TtsModelMetadata } from '@/types/tts';
 
 export interface DisplayedModelFile {
   name: string;
@@ -9,7 +10,7 @@ export interface DisplayedModelFile {
 }
 
 export function getDisplayedModelFiles(
-  model: SpeechModelMetadata,
+  model: SpeechModelMetadata | TtsModelMetadata,
   inspection: ModelInspectionResult | null
 ): ReadonlyArray<DisplayedModelFile> {
   if (inspection) {

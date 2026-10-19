@@ -8,6 +8,7 @@ import type {
   ModelInstallationStatus,
   SpeechModelMetadata,
 } from '@/types/speech';
+import type { TtsModelMetadata } from '@/types/tts';
 import {
   type DisplayedModelFile,
   getDisplayedModelFiles,
@@ -19,7 +20,9 @@ import {
 export { getStatusBadgeConfig };
 export type { StatusBadgeConfig, DisplayedModelFile };
 
-export function useModelInspection(model: SpeechModelMetadata = DEFAULT_SPEECH_MODEL) {
+export function useModelInspection(
+  model: SpeechModelMetadata | TtsModelMetadata = DEFAULT_SPEECH_MODEL
+) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [inspection, setInspection] = useState<ModelInspectionResult | null>(null);

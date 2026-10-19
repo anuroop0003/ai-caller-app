@@ -92,11 +92,33 @@ export class TextToSpeechService {
         }
       }
 
+      let modelPathConfig: { type: 'file' | 'asset'; path: string } = {
+        type: 'asset',
+        path: `models/${model.id}`,
+      };
+
+      if (FileSystem.documentDirectory) {
+        try {
+          const targetModelDir = `${FileSystem.documentDirectory}models/${model.id}`;
+          const onnxInfo = await FileSystem.getInfoAsync(
+            `${targetModelDir}/ml_IN-meera-medium.onnx`
+          );
+          if (onnxInfo.exists) {
+            modelPathConfig = {
+              type: 'file',
+              path: targetModelDir.replace(/^file:\/\//, ''),
+            };
+          }
+        } catch {
+          // Fallback to asset
+        }
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { createTTS } = require('react-native-sherpa-onnx/tts');
 
       const engine: TtsEngine = await createTTS({
-        modelPath: { type: 'asset', path: `models/${model.id}` },
+        modelPath: modelPathConfig,
         modelType: model.architecture,
       });
 
