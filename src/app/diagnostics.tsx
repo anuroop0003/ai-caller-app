@@ -7,12 +7,7 @@ import { AppHeader, ScreenContainer, ScreenHeader } from '@/components/layout';
 export default function DiagnosticsScreen() {
   const params = useLocalSearchParams<{ tab?: DiagnosticsMode }>();
   const initialMode: DiagnosticsMode =
-    params.tab === 'stt' ||
-    params.tab === 'tts' ||
-    params.tab === 'llm' ||
-    params.tab === 'pipeline'
-      ? params.tab
-      : 'stt';
+    params.tab === 'stt' || params.tab === 'tts' || params.tab === 'llm' ? params.tab : 'stt';
 
   return (
     <ScreenContainer
@@ -21,7 +16,7 @@ export default function DiagnosticsScreen() {
     >
       <ScreenHeader
         title="Voice Diagnostics"
-        description="Benchmark on-device Malayalam speech recognition (STT) and speech synthesis (TTS)."
+        description="Benchmark on-device Malayalam speech recognition (STT), speech synthesis (TTS), and local LLM."
       />
       <DiagnosticsContent key={initialMode} initialMode={initialMode} />
     </ScreenContainer>

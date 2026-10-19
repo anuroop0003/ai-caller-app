@@ -4,4 +4,3 @@ export * from './speechRecognitionService';
 export * from './audioBenchmarkService';
 export * from './textToSpeechService';
 export * from './audioArbitratorService';
-export * from './deviceValidationService';

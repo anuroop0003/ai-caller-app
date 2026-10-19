@@ -3,7 +3,6 @@ import { View } from 'react-native';
 
 import { DiagnosticsLlmContent } from './diagnostics-llm-content';
 import { DiagnosticsModeTabs, type DiagnosticsMode } from './diagnostics-mode-tabs';
-import { DiagnosticsPipelineContent } from './diagnostics-pipeline-content';
 import { DiagnosticsSttContent } from './diagnostics-stt-content';
 import { DiagnosticsTtsContent } from './diagnostics-tts-content';
 
@@ -28,8 +27,6 @@ export function DiagnosticsContent({
         return <DiagnosticsTtsContent />;
       case 'llm':
         return <DiagnosticsLlmContent />;
-      case 'pipeline':
-        return <DiagnosticsPipelineContent />;
     }
   };
 

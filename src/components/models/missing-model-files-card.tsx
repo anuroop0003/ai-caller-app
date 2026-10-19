@@ -81,10 +81,7 @@ export function MissingModelFilesCard({
 
         <View className="gap-1 mt-0.5">
           {missingFiles.map((filename) => (
-            <View
-              key={filename}
-              className="flex-row items-center justify-between py-1 border-b border-border last:border-b-0"
-            >
+            <View key={filename} className="flex-row items-center justify-between py-1">
               <ThemedText
                 type="code"
                 className="text-foreground text-xs flex-1 mr-2"

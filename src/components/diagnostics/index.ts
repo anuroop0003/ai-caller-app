@@ -16,3 +16,4 @@ export * from './diagnostics-stt-content';
 export * from './diagnostics-tts-content';
 export * from './diagnostics-llm-content';
 export * from './tts-benchmark-card';
+export * from './llm';
