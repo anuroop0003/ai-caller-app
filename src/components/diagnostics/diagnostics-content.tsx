@@ -11,10 +11,14 @@ import type { UseDiagnosticsResult } from '@/hooks/use-diagnostics';
 
 export interface DiagnosticsContentProps {
   diagnosticsHook?: UseDiagnosticsResult;
+  initialMode?: DiagnosticsMode;
 }
 
-export function DiagnosticsContent({ diagnosticsHook }: DiagnosticsContentProps = {}) {
-  const [activeMode, setActiveMode] = useState<DiagnosticsMode>('stt');
+export function DiagnosticsContent({
+  diagnosticsHook,
+  initialMode = 'stt',
+}: DiagnosticsContentProps = {}) {
+  const [activeMode, setActiveMode] = useState<DiagnosticsMode>(initialMode);
 
   const renderActiveContent = () => {
     switch (activeMode) {

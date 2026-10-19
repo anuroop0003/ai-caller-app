@@ -39,6 +39,7 @@ export interface FileVerificationItem {
   readonly expectedSizeBytes: number;
   readonly isValidSize: boolean;
   readonly isRequired: boolean;
+  readonly isValid?: boolean;
   readonly isCorrupted?: boolean;
   readonly localPath: string;
 }

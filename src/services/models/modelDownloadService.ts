@@ -1,21 +1,7 @@
-import type { UnifiedModelPackage } from '@/constants/models';
+import type { ModelFileEntry, UnifiedModelPackage } from '@/constants/models';
+import { DownloadSpeedTracker } from './internal/downloadSpeedTracker';
+import { type DownloadResumableInstance, FsAdapter } from './internal/fsAdapter';
 import { ModelFileService } from './modelFileService';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let cachedFs: any = null;
-function getFs() {
-  if (cachedFs) return cachedFs;
-  if (typeof process !== 'undefined' && process.versions?.node) {
-    return null;
-  }
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    cachedFs = require('expo-file-system/legacy');
-    return cachedFs;
-  } catch {
-    return null;
-  }
-}
 
 export type DownloadStateStatus =
   'idle' | 'checking' | 'downloading' | 'verifying' | 'ready' | 'error';
@@ -36,8 +22,7 @@ export interface ModelDownloadProgressState {
 type ProgressListener = (state: ModelDownloadProgressState) => void;
 
 class ModelDownloadService {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private activeDownloadResumable: any = null;
+  private activeDownloadResumable: DownloadResumableInstance | null = null;
   private activeModelId: string | null = null;
   private cancelRequested = false;
   private listeners = new Set<ProgressListener>();
@@ -74,6 +59,100 @@ class ModelDownloadService {
   }
 
   /**
+   * Validates available device storage against package size with a 150MB safety buffer.
+   */
+  private async assertStorageAvailable(totalBytes: number): Promise<void> {
+    const freeSpace = await ModelFileService.getFreeDiskStorageBytes();
+    const requiredBuffer = totalBytes + 150 * 1024 * 1024; // 150MB margin
+    if (freeSpace < requiredBuffer) {
+      throw new Error(
+        `Insufficient disk storage. Required: ${(requiredBuffer / (1024 * 1024)).toFixed(0)} MB, Available: ${(freeSpace / (1024 * 1024)).toFixed(0)} MB`
+      );
+    }
+  }
+
+  /**
+   * Prepares the target storage directory for the model package.
+   */
+  private async prepareModelDirectory(model: UnifiedModelPackage): Promise<string> {
+    const modelDir = ModelFileService.getModelDir(model);
+    const dirInfo = await FsAdapter.getInfoAsync(modelDir);
+    if (!dirInfo.exists) {
+      await FsAdapter.makeDirectoryAsync(modelDir, { intermediates: true });
+    }
+    return modelDir;
+  }
+
+  /**
+   * Downloads a single file from the remote URL with staging and progress tracking.
+   */
+  private async downloadSingleFile(
+    spec: ModelFileEntry,
+    model: UnifiedModelPackage,
+    modelDir: string,
+    tracker: DownloadSpeedTracker
+  ): Promise<void> {
+    const finalPath = ModelFileService.getFilePath(model, spec.relativePath);
+    const tempPath = `${finalPath}.tmp`;
+
+    // Fast path: skip if file already completely downloaded and valid on disk
+    const check = await ModelFileService.checkFile(finalPath, spec.fileSizeBytes);
+    if (check.exists && check.isValidSize) {
+      tracker.addCompletedFileBytes(check.sizeBytes);
+      return;
+    }
+
+    // Delete any leftover temp file
+    try {
+      const tempInfo = await FsAdapter.getInfoAsync(tempPath);
+      if (tempInfo.exists) {
+        await FsAdapter.deleteAsync(tempPath, { idempotent: true });
+      }
+    } catch {
+      // Ignore cleanup error
+    }
+
+    const resumable = FsAdapter.createDownloadResumable(
+      spec.remoteUrl,
+      tempPath,
+      {},
+      (downloadProgress) => {
+        const fileBytes = downloadProgress.totalBytesWritten ?? 0;
+        const snapshot = tracker.update(fileBytes);
+
+        this.updateProgress({
+          status: 'downloading',
+          bytesDownloaded: snapshot.bytesDownloaded,
+          totalBytes: snapshot.totalBytes,
+          progressPercent: snapshot.progressPercent,
+          speedBytesPerSec: snapshot.speedBytesPerSec,
+        });
+      }
+    );
+
+    this.activeDownloadResumable = resumable;
+    const result = await resumable.downloadAsync();
+    this.activeDownloadResumable = null;
+
+    if (!result || !result.uri) {
+      throw new Error(`Failed to download ${spec.filename}`);
+    }
+
+    // Atomic move from temp to final
+    await FsAdapter.moveAsync({
+      from: tempPath,
+      to: finalPath,
+    });
+
+    tracker.addCompletedFileBytes(spec.fileSizeBytes);
+
+    // Extract archive if configured (e.g. espeak-ng-data)
+    if (spec.isArchive && spec.extractedTargetDir) {
+      await ModelFileService.extractArchiveIfPossible(finalPath, modelDir);
+    }
+  }
+
+  /**
    * Downloads all required files for a unified model package.
    */
   async downloadModel(model: UnifiedModelPackage): Promise<boolean> {
@@ -83,8 +162,7 @@ class ModelDownloadService {
       );
     }
 
-    const fs = getFs();
-    if (!fs) {
+    if (!FsAdapter.isAvailable()) {
       this.updateProgress({
         status: 'error',
         modelId: model.id,
@@ -107,24 +185,12 @@ class ModelDownloadService {
 
     try {
       // 1. Check storage space
-      const freeSpace = await ModelFileService.getFreeDiskStorageBytes();
-      const requiredBuffer = model.totalSizeBytes + 150 * 1024 * 1024; // 150MB margin
-      if (freeSpace < requiredBuffer) {
-        throw new Error(
-          `Insufficient disk storage. Required: ${(requiredBuffer / (1024 * 1024)).toFixed(0)} MB, Available: ${(freeSpace / (1024 * 1024)).toFixed(0)} MB`
-        );
-      }
+      await this.assertStorageAvailable(model.totalSizeBytes);
 
       // 2. Ensure target directory exists
-      const modelDir = ModelFileService.getModelDir(model);
-      const dirInfo = await fs.getInfoAsync(modelDir);
-      if (!dirInfo.exists) {
-        await fs.makeDirectoryAsync(modelDir, { intermediates: true });
-      }
+      const modelDir = await this.prepareModelDirectory(model);
 
-      let cumulativeDownloaded = 0;
-      let lastTimestamp = Date.now();
-      let lastBytes = 0;
+      const tracker = new DownloadSpeedTracker(model.totalSizeBytes);
 
       // 3. Download each file
       for (let i = 0; i < model.files.length; i++) {
@@ -133,9 +199,6 @@ class ModelDownloadService {
         }
 
         const spec = model.files[i];
-        const finalPath = ModelFileService.getFilePath(model, spec.relativePath);
-        const tempPath = `${finalPath}.tmp`;
-
         this.updateProgress({
           status: 'downloading',
           currentFilename: spec.filename,
@@ -143,76 +206,7 @@ class ModelDownloadService {
           totalFiles: model.files.length,
         });
 
-        // Fast path: skip if file already completely downloaded and valid
-        const check = await ModelFileService.checkFile(finalPath, spec.fileSizeBytes);
-        if (check.exists && check.isValidSize) {
-          cumulativeDownloaded += check.sizeBytes;
-          continue;
-        }
-
-        // Delete any leftover temp file
-        try {
-          const tempInfo = await fs.getInfoAsync(tempPath);
-          if (tempInfo.exists) {
-            await fs.deleteAsync(tempPath, { idempotent: true });
-          }
-        } catch {
-          // Ignore
-        }
-
-        const resumable = fs.createDownloadResumable(
-          spec.remoteUrl,
-          tempPath,
-          {},
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (downloadProgress: any) => {
-            const fileBytes = downloadProgress.totalBytesWritten ?? 0;
-            const currentTotal = cumulativeDownloaded + fileBytes;
-            const now = Date.now();
-            const timeDiffSec = (now - lastTimestamp) / 1000;
-
-            let speedBytesPerSec = this.currentState.speedBytesPerSec;
-            if (timeDiffSec >= 0.5) {
-              speedBytesPerSec = Math.round((currentTotal - lastBytes) / timeDiffSec);
-              lastTimestamp = now;
-              lastBytes = currentTotal;
-            }
-
-            const percent = Math.min(
-              100,
-              Math.round((currentTotal / Math.max(1, model.totalSizeBytes)) * 100)
-            );
-
-            this.updateProgress({
-              status: 'downloading',
-              bytesDownloaded: currentTotal,
-              totalBytes: model.totalSizeBytes,
-              progressPercent: percent,
-              speedBytesPerSec,
-            });
-          }
-        );
-
-        this.activeDownloadResumable = resumable;
-        const result = await resumable.downloadAsync();
-        this.activeDownloadResumable = null;
-
-        if (!result || !result.uri) {
-          throw new Error(`Failed to download ${spec.filename}`);
-        }
-
-        // Atomic move from temp to final
-        await fs.moveAsync({
-          from: tempPath,
-          to: finalPath,
-        });
-
-        cumulativeDownloaded += spec.fileSizeBytes;
-
-        // Extract if archive (e.g. espeak-ng-data)
-        if (spec.isArchive && spec.extractedTargetDir) {
-          await this.extractArchiveIfPossible(finalPath, modelDir);
-        }
+        await this.downloadSingleFile(spec, model, modelDir, tracker);
       }
 
       // 4. Verification state
@@ -245,23 +239,6 @@ class ModelDownloadService {
       this.activeDownloadResumable = null;
       this.activeModelId = null;
       this.cancelRequested = false;
-    }
-  }
-
-  /**
-   * Helper to extract tar.bz2 archives using react-native-sherpa-onnx if available.
-   */
-  private async extractArchiveIfPossible(archivePath: string, targetDir: string): Promise<void> {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const sherpa = require('react-native-sherpa-onnx');
-      if (typeof sherpa?.extractArchive === 'function') {
-        const cleanArchive = archivePath.replace(/^file:\/\//, '');
-        const cleanTarget = targetDir.replace(/^file:\/\//, '');
-        await sherpa.extractArchive(cleanArchive, cleanTarget, true, 0, 'model_extract');
-      }
-    } catch (e) {
-      console.warn('[ModelDownloadService] Native extraction skipped/fallback:', e);
     }
   }
 

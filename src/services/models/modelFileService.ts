@@ -1,29 +1,13 @@
 import type { FileVerificationItem, UnifiedModelPackage } from '@/constants/models';
-
-// Safely guard expo-file-system dynamic import to ensure node.js test runner doesn't fail
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let cachedFs: any = null;
-function getFs() {
-  if (cachedFs) return cachedFs;
-  if (typeof process !== 'undefined' && process.versions?.node) {
-    return null;
-  }
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    cachedFs = require('expo-file-system/legacy');
-    return cachedFs;
-  } catch {
-    return null;
-  }
-}
+import { FsAdapter } from './internal/fsAdapter';
+import { ModelArchiveExtractor } from './internal/modelArchiveExtractor';
 
 export class ModelFileService {
   /**
    * Resolves the app-private base storage directory.
    */
   static getBaseStorageDir(): string {
-    const fs = getFs();
-    return fs?.documentDirectory ?? '/data/user/0/com.anonymous.aicallerapp/files/';
+    return FsAdapter.getDocumentDirectory();
   }
 
   /**
@@ -46,16 +30,7 @@ export class ModelFileService {
    * Queries free disk storage on the device in bytes.
    */
   static async getFreeDiskStorageBytes(): Promise<number> {
-    const fs = getFs();
-    try {
-      if (typeof fs?.getFreeDiskStorageAsync === 'function') {
-        return await fs.getFreeDiskStorageAsync();
-      }
-    } catch (err) {
-      console.warn('[ModelFileService] Could not check free storage:', err);
-    }
-    // Default fallback: 8 GB
-    return 8 * 1024 * 1024 * 1024;
+    return await FsAdapter.getFreeDiskStorageAsync();
   }
 
   /**
@@ -65,35 +40,33 @@ export class ModelFileService {
     localPath: string,
     expectedSizeBytes: number
   ): Promise<{ exists: boolean; sizeBytes: number; isValidSize: boolean }> {
-    const fs = getFs();
-    if (!fs) {
+    const info = await FsAdapter.getInfoAsync(localPath);
+    if (!info.exists) {
       return { exists: false, sizeBytes: 0, isValidSize: false };
     }
 
-    try {
-      const cleanPath = localPath.startsWith('file://') ? localPath : `file://${localPath}`;
-      const info = await fs.getInfoAsync(cleanPath);
-      if (!info.exists) {
-        return { exists: false, sizeBytes: 0, isValidSize: false };
-      }
+    const size = info.size;
+    // Accept file if within reasonable tolerance (or exact match, or config/json text size)
+    const isConfigOrText = expectedSizeBytes < 100000;
+    const isValidSize = isConfigOrText
+      ? size > 0
+      : expectedSizeBytes > 0
+        ? size / expectedSizeBytes >= 0.98 && size / expectedSizeBytes <= 1.02
+        : size > 0;
 
-      const size = info.size ?? 0;
-      // Accept file if within reasonable tolerance (or exact match, or config/json text size)
-      const isConfigOrText = expectedSizeBytes < 100000;
-      const isValidSize = isConfigOrText
-        ? size > 0
-        : expectedSizeBytes > 0
-          ? size / expectedSizeBytes >= 0.98 && size / expectedSizeBytes <= 1.02
-          : size > 0;
+    return {
+      exists: true,
+      sizeBytes: size,
+      isValidSize,
+    };
+  }
 
-      return {
-        exists: true,
-        sizeBytes: size,
-        isValidSize,
-      };
-    } catch {
-      return { exists: false, sizeBytes: 0, isValidSize: false };
-    }
+  /**
+   * Helper to extract tar.bz2 / tar archives using native extraction.
+   * Delegated to ModelArchiveExtractor.
+   */
+  static async extractArchiveIfPossible(archivePath: string, targetDir: string): Promise<boolean> {
+    return await ModelArchiveExtractor.extractArchiveIfPossible(archivePath, targetDir);
   }
 
   /**
@@ -115,13 +88,15 @@ export class ModelFileService {
       let extractedExists = true;
       if (spec.isArchive && spec.extractedTargetDir) {
         const extractedDir = `${this.getModelDir(model)}${spec.extractedTargetDir}`;
-        const fs = getFs();
-        if (fs) {
-          try {
-            const dirInfo = await fs.getInfoAsync(extractedDir);
-            extractedExists = dirInfo.exists && dirInfo.isDirectory;
-          } catch {
-            extractedExists = false;
+        const dirInfo = await FsAdapter.getInfoAsync(extractedDir);
+        extractedExists = dirInfo.exists && dirInfo.isDirectory;
+
+        // If archive file is downloaded and valid on disk, but extracted folder is missing, auto-extract
+        if (!extractedExists && status.exists && status.isValidSize) {
+          const success = await this.extractArchiveIfPossible(filePath, this.getModelDir(model));
+          if (success) {
+            const recheck = await FsAdapter.getInfoAsync(extractedDir);
+            extractedExists = recheck.exists && recheck.isDirectory;
           }
         }
       }
@@ -135,6 +110,7 @@ export class ModelFileService {
         expectedSizeBytes: spec.fileSizeBytes,
         isValidSize: status.isValidSize,
         isRequired: spec.isRequired,
+        isValid,
         localPath: filePath,
       });
 
@@ -154,14 +130,11 @@ export class ModelFileService {
    * Safely deletes all files in the model package directory.
    */
   static async deleteModel(model: UnifiedModelPackage): Promise<void> {
-    const fs = getFs();
-    if (!fs) return;
-
     const modelDir = this.getModelDir(model);
     try {
-      const info = await fs.getInfoAsync(modelDir);
+      const info = await FsAdapter.getInfoAsync(modelDir);
       if (info.exists) {
-        await fs.deleteAsync(modelDir, { idempotent: true });
+        await FsAdapter.deleteAsync(modelDir, { idempotent: true });
       }
     } catch (err) {
       console.warn(`[ModelFileService] Failed to delete ${model.id}:`, err);

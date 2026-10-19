@@ -50,41 +50,50 @@ export function MissingModelFilesCard({
     });
   };
 
+  const primaryForeground = isDark ? '#18181b' : '#fafafa';
+
   return (
-    <View className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 gap-3.5 my-2">
+    <View className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3.5 gap-3 my-1">
       {/* Header */}
-      <View className="flex-row items-start gap-3">
-        <View className="w-9 h-9 rounded-xl bg-amber-500/15 items-center justify-center mt-0.5">
-          <Ionicons name="warning" size={20} color={isDark ? '#fbbf24' : '#d97706'} />
+      <View className="flex-row items-start gap-2.5">
+        <View className="w-9 h-9 rounded-md bg-amber-500/15 border border-amber-500/30 items-center justify-center mt-0.5">
+          <Ionicons name="warning" size={18} color={isDark ? '#fbbf24' : '#d97706'} />
         </View>
 
         <View className="flex-1">
-          <ThemedText type="default" className="font-semibold text-foreground">
+          <ThemedText type="smallBold" className="text-foreground">
             {info.title}
           </ThemedText>
-          <ThemedText type="small" className="text-muted-foreground mt-0.5 leading-5">
+          <ThemedText type="small" className="text-muted-foreground mt-0.5 leading-5 text-xs">
             {customMessage ?? info.defaultDesc}
           </ThemedText>
         </View>
       </View>
 
       {/* Missing Files List */}
-      <View className="bg-card/70 rounded-xl p-3 border border-border/80 gap-2">
-        <ThemedText type="smallBold" className="text-foreground text-xs uppercase tracking-wider">
+      <View className="bg-card rounded-md p-3 border border-border gap-1.5">
+        <ThemedText
+          type="smallBold"
+          className="text-xs text-muted-foreground uppercase tracking-wider"
+        >
           Required Files Status ({modelName})
         </ThemedText>
 
-        <View className="gap-1.5 mt-1">
+        <View className="gap-1 mt-0.5">
           {missingFiles.map((filename) => (
             <View
               key={filename}
-              className="flex-row items-center justify-between py-1 border-b border-border/40 last:border-b-0"
+              className="flex-row items-center justify-between py-1 border-b border-border last:border-b-0"
             >
-              <ThemedText type="small" className="text-foreground font-mono text-xs">
+              <ThemedText
+                type="code"
+                className="text-foreground text-xs flex-1 mr-2"
+                numberOfLines={1}
+              >
                 {filename}
               </ThemedText>
-              <View className="px-2 py-0.5 rounded bg-rose-500/15 border border-rose-500/30">
-                <ThemedText type="smallBold" className="text-rose-600 dark:text-rose-400 text-xs">
+              <View className="h-6 flex-row items-center justify-center px-2 rounded-md bg-destructive/10 border border-destructive/30">
+                <ThemedText type="smallBold" className="text-destructive text-xs leading-none">
                   Missing
                 </ThemedText>
               </View>
@@ -98,10 +107,10 @@ export function MissingModelFilesCard({
         onPress={handleOpenModels}
         accessibilityRole="button"
         accessibilityLabel="Open model management flow"
-        className="flex-row items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-blue-600 active:opacity-85 shadow-sm"
+        className="flex-row items-center justify-center gap-1.5 py-2 px-3 rounded-md bg-primary active:opacity-80"
       >
-        <Ionicons name="download-outline" size={16} color="#ffffff" />
-        <ThemedText type="smallBold" className="text-white">
+        <Ionicons name="download-outline" size={16} color={primaryForeground} />
+        <ThemedText type="smallBold" className="text-primary-foreground text-xs">
           Open Model Management Flow
         </ThemedText>
       </Pressable>

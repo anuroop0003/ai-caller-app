@@ -51,6 +51,14 @@ test('1. ModelRegistry', async (t) => {
     assert.equal(defaultLlm.id, LLM_QWEN_0_5B_MODEL.id);
   });
 
+  await t.test('throws descriptive error on unknown or invalid category', () => {
+    assert.throws(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      () => ModelRegistry.getDefaultModel('invalid_category' as any),
+      /\[ModelRegistry\] Unsupported or invalid model category/
+    );
+  });
+
   await t.test('finds individual models by id', () => {
     const model = ModelRegistry.getModelById('qwen2.5-1.5b-instruct-q4_k_m');
     assert.ok(model);
@@ -121,5 +129,68 @@ test('4. ModelDownloadService Subscription & Concurrency Safety', async (t) => {
     const state = modelDownloadService.getCurrentState();
     assert.equal(state.status, 'idle');
     assert.equal(state.modelId, null);
+  });
+});
+
+test('5. Internal Model Service Utilities', async (t) => {
+  const { DownloadSpeedTracker } = await import('../internal/downloadSpeedTracker');
+  const { FsAdapter } = await import('../internal/fsAdapter');
+  const { ModelArchiveExtractor } = await import('../internal/modelArchiveExtractor');
+
+  await t.test('DownloadSpeedTracker clamps progress and tracks cumulative bytes', () => {
+    const tracker = new DownloadSpeedTracker(1000);
+
+    const snapshot1 = tracker.update(250);
+    assert.equal(snapshot1.bytesDownloaded, 250);
+    assert.equal(snapshot1.progressPercent, 25);
+
+    tracker.addCompletedFileBytes(500);
+    const snapshot2 = tracker.update(500);
+    assert.equal(snapshot2.bytesDownloaded, 1000);
+    assert.equal(snapshot2.progressPercent, 100);
+
+    // Overflow protection: clamped to 100%
+    const snapshotOverflow = tracker.update(1000);
+    assert.equal(snapshotOverflow.progressPercent, 100);
+
+    // Edge case: zero total bytes
+    const zeroTracker = new DownloadSpeedTracker(0);
+    const zeroSnapshot = zeroTracker.update(0);
+    assert.equal(zeroSnapshot.progressPercent, 0);
+  });
+
+  await t.test('FsAdapter provides safe headless fallbacks in Node', async () => {
+    const docDir = FsAdapter.getDocumentDirectory();
+    assert.ok(docDir.length > 0);
+
+    const freeStorage = await FsAdapter.getFreeDiskStorageAsync();
+    assert.ok(freeStorage > 0);
+
+    const info = await FsAdapter.getInfoAsync('/non/existent/path');
+    assert.equal(info.exists, false);
+    assert.equal(info.size, 0);
+  });
+
+  await t.test('ModelArchiveExtractor shares in-flight Promise and cleans up', async () => {
+    const isExtractingBefore = ModelArchiveExtractor.isExtracting(
+      '/path/archive.tar.bz2',
+      '/target'
+    );
+    assert.equal(isExtractingBefore, false);
+
+    // In Node test runner, extraction returns false, but concurrent calls must share the same Promise
+    const [res1, res2] = await Promise.all([
+      ModelArchiveExtractor.extractArchiveIfPossible('/path/archive.tar.bz2', '/target'),
+      ModelArchiveExtractor.extractArchiveIfPossible('/path/archive.tar.bz2', '/target'),
+    ]);
+
+    assert.equal(res1, res2);
+
+    // After completion, lock is released allowing subsequent attempts
+    const isExtractingAfter = ModelArchiveExtractor.isExtracting(
+      '/path/archive.tar.bz2',
+      '/target'
+    );
+    assert.equal(isExtractingAfter, false);
   });
 });

@@ -3,14 +3,22 @@ import { useCallback, useEffect, useState } from 'react';
 import type { UnifiedModelPackage } from '@/constants/models';
 import { type ModelDownloadProgressState, modelDownloadService } from '@/services/models';
 
-export function useModelDownload() {
+export function useModelDownload(targetModelId?: string) {
   const [downloadState, setDownloadState] = useState<ModelDownloadProgressState>(
     modelDownloadService.getCurrentState()
   );
 
   useEffect(() => {
-    const unsubscribe = modelDownloadService.subscribe(setDownloadState);
-    return unsubscribe;
+    let isMounted = true;
+    const unsubscribe = modelDownloadService.subscribe((state) => {
+      if (isMounted) {
+        setDownloadState(state);
+      }
+    });
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   const startDownload = useCallback(async (model: UnifiedModelPackage) => {
@@ -21,11 +29,20 @@ export function useModelDownload() {
     await modelDownloadService.cancelDownload();
   }, []);
 
+  const isTargetModel = targetModelId ? downloadState.modelId === targetModelId : true;
+
   return {
     downloadState,
     startDownload,
     cancelDownload,
-    isDownloading: downloadState.status === 'downloading' || downloadState.status === 'checking',
-    isVerifying: downloadState.status === 'verifying',
+    isDownloading:
+      isTargetModel &&
+      (downloadState.status === 'downloading' || downloadState.status === 'checking'),
+    isVerifying: isTargetModel && downloadState.status === 'verifying',
+    isCurrentModelActive:
+      isTargetModel &&
+      (downloadState.status === 'downloading' ||
+        downloadState.status === 'checking' ||
+        downloadState.status === 'verifying'),
   };
 }

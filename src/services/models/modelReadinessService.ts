@@ -3,79 +3,30 @@ import {
   type ModelReadinessStatus,
   type UnifiedModelPackage,
 } from '@/constants/models';
+import { RuntimeEnvironment } from './internal/runtimeEnvironment';
 import { ModelFileService } from './modelFileService';
 import { ModelRegistry } from './modelRegistry';
 
-function isNodeEnv(): boolean {
-  return typeof process !== 'undefined' && Boolean(process.versions?.node);
-}
-
-function getPlatformOS(): string {
-  if (isNodeEnv()) return 'node';
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require('react-native').Platform?.OS ?? 'unknown';
-  } catch {
-    return 'unknown';
-  }
-}
-
-function getTurboModuleRegistry() {
-  if (isNodeEnv()) return null;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    return require('react-native').TurboModuleRegistry ?? null;
-  } catch {
-    return null;
-  }
-}
-
-function isExpoGo(): boolean {
-  if (isNodeEnv()) return false;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Constants = require('expo-constants').default;
-    return Constants?.executionEnvironment === 'storeClient';
-  } catch {
-    return false;
-  }
-}
-
 export class ModelReadinessService {
   /**
-   * Diagnostic check for native Sherpa-ONNX TurboModule.
+   * Diagnostic check for native Sherpa-ONNX runtime capability.
    */
   static isSherpaNativeSupported(): boolean {
-    if (getPlatformOS() === 'web' || isExpoGo()) return false;
-    if (isNodeEnv()) return true; // Mock mode in tests
-    try {
-      const tm = getTurboModuleRegistry();
-      return tm ? tm.get('SherpaOnnx') != null : false;
-    } catch {
-      return false;
-    }
+    return RuntimeEnvironment.isSherpaNativeSupported();
   }
 
   /**
-   * Diagnostic check for native llama.rn bridge.
+   * Diagnostic check for native llama.rn bridge capability.
    */
   static isLlamaNativeSupported(): boolean {
-    if (getPlatformOS() === 'web' || isExpoGo()) return false;
-    if (isNodeEnv()) return true; // Mock mode in tests
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const llamaRn = require('llama.rn');
-      return typeof llamaRn?.initLlama === 'function';
-    } catch {
-      return false;
-    }
+    return RuntimeEnvironment.isLlamaNativeSupported();
   }
 
   /**
    * Checks whether an STT or TTS model is pre-bundled in the APK assets.
    */
   static async isModelBundledInApkAssets(modelId: string): Promise<boolean> {
-    if (isNodeEnv()) return false;
+    if (RuntimeEnvironment.isNode()) return false;
     if (!this.isSherpaNativeSupported()) return false;
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -115,7 +66,6 @@ export class ModelReadinessService {
     // 1. Verify app-private storage files
     const verification = await ModelFileService.verifyModelFiles(model);
     const existingRequiredCount = verification.files.filter((f) => f.isRequired && f.exists).length;
-    const totalRequiredCount = verification.files.filter((f) => f.isRequired).length;
 
     // Check if fully verified in app storage
     if (verification.isComplete) {
@@ -155,8 +105,11 @@ export class ModelReadinessService {
 
     // 3. Status determination: incomplete vs not_downloaded
     let status: ModelReadinessStatus = 'not_downloaded';
-    if (existingRequiredCount > 0 && existingRequiredCount < totalRequiredCount) {
+    let storageLocation: 'app_storage' | 'bundled_asset' | 'none' = 'none';
+
+    if (existingRequiredCount > 0) {
       status = 'incomplete';
+      storageLocation = 'app_storage';
     }
 
     return {
@@ -164,7 +117,7 @@ export class ModelReadinessService {
       category: model.category,
       status,
       isReady: false,
-      storageLocation: 'none',
+      storageLocation,
       resolvedPath: null,
       files: verification.files,
       missingFiles: verification.missingFiles,

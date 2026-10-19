@@ -24,6 +24,107 @@ export type ThemedTextProps = TextProps & {
   themeColor?: ThemeColor;
   className?: string;
 };
+const NON_COLOR_TEXT_CLASSES = new Set([
+  'text-xs',
+  'text-sm',
+  'text-base',
+  'text-lg',
+  'text-xl',
+  'text-2xl',
+  'text-3xl',
+  'text-4xl',
+  'text-5xl',
+  'text-6xl',
+  'text-7xl',
+  'text-8xl',
+  'text-9xl',
+  'text-left',
+  'text-center',
+  'text-right',
+  'text-justify',
+  'text-start',
+  'text-end',
+  'text-wrap',
+  'text-nowrap',
+  'text-balance',
+  'text-pretty',
+  'text-ellipsis',
+  'text-clip',
+]);
+
+const THEME_TOKEN_COLOR_MAP: Record<string, ThemeColor> = {
+  'text-foreground': 'foreground',
+  'text-muted-foreground': 'mutedForeground',
+  'text-card-foreground': 'cardForeground',
+  'text-primary': 'primary',
+  'text-primary-foreground': 'primaryForeground',
+  'text-secondary': 'secondary',
+  'text-secondary-foreground': 'secondaryForeground',
+  'text-destructive': 'destructive',
+  'text-muted': 'mutedForeground',
+};
+
+function resolveTextColor(
+  theme: ReturnType<typeof useTheme>,
+  themeColor?: ThemeColor,
+  type?: ThemedTextProps['type'],
+  className?: string
+): string | undefined {
+  if (themeColor != null) {
+    return theme[themeColor];
+  }
+
+  if (className) {
+    const classes = className.split(/\s+/);
+    let detectedThemeToken: ThemeColor | null = null;
+    let hasCustomColor = false;
+
+    for (const rawClass of classes) {
+      if (!rawClass) continue;
+      // Strip variant prefixes like dark:, sm:, active:, etc.
+      const parts = rawClass.split(':');
+      const baseClass = parts[parts.length - 1];
+
+      if (!baseClass.startsWith('text-')) continue;
+
+      // Ignore text sizes like text-[10px], text-[1.2rem]
+      if (/^text-\[\d+(?:px|rem|em|%)\]$/.test(baseClass)) continue;
+
+      // Ignore non-color classes (font size, text align, overflow)
+      if (NON_COLOR_TEXT_CLASSES.has(baseClass)) continue;
+
+      // Check if it matches a known shadcn theme token
+      if (baseClass in THEME_TOKEN_COLOR_MAP) {
+        detectedThemeToken = THEME_TOKEN_COLOR_MAP[baseClass];
+        continue;
+      }
+
+      // Any other text-* class is an explicit custom utility color
+      // (e.g. text-blue-600, text-emerald-400, text-white, text-black, text-[#fff])
+      hasCustomColor = true;
+    }
+
+    // If caller explicitly provided a custom Tailwind color class (e.g. text-blue-600),
+    // let NativeWind handle the color without inline style overriding it.
+    if (hasCustomColor) {
+      return undefined;
+    }
+
+    // If caller specified a theme token in className (e.g. text-muted-foreground), use it.
+    if (detectedThemeToken) {
+      return theme[detectedThemeToken];
+    }
+  }
+
+  // Fallback to type-based theme colors
+  if (type === 'muted') {
+    return theme.mutedForeground;
+  }
+  if (type === 'link' || type === 'linkPrimary') {
+    return theme.primary;
+  }
+  return theme.foreground;
+}
 
 export function ThemedText({
   style,
@@ -33,17 +134,7 @@ export function ThemedText({
   ...rest
 }: ThemedTextProps) {
   const theme = useTheme();
-
-  // If themeColor is explicitly specified, use it.
-  // Otherwise, only fallback to inline color if no className was provided.
-  const defaultColor =
-    themeColor != null
-      ? theme[themeColor]
-      : !className
-        ? type === 'muted'
-          ? theme.mutedForeground
-          : theme.foreground
-        : undefined;
+  const defaultColor = resolveTextColor(theme, themeColor, type, className);
 
   return (
     <Text

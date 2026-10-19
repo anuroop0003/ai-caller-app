@@ -18,7 +18,7 @@ export function DiagnosticsModeTabs({ activeMode, onSelectMode }: DiagnosticsMod
   const isDark = colorScheme === 'dark';
 
   return (
-    <View className="flex-row p-1 rounded-lg bg-secondary/70 border border-border">
+    <View className="flex-row p-1 rounded-md bg-secondary/70 border border-border">
       {/* Transcription (STT) Tab */}
       <Pressable
         key="stt-mode-tab"
