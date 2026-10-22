@@ -139,6 +139,30 @@ export class FsAdapter {
   }
 
   /**
+   * Reads file contents as string.
+   */
+  static async readAsStringAsync(uri: string): Promise<string> {
+    const fs = this.getFs();
+    if (!fs || typeof fs.readAsStringAsync !== 'function') {
+      return '';
+    }
+    const cleanUri = uri.startsWith('file://') ? uri : `file://${uri}`;
+    return await fs.readAsStringAsync(cleanUri);
+  }
+
+  /**
+   * Writes string contents to a file.
+   */
+  static async writeAsStringAsync(uri: string, contents: string): Promise<void> {
+    const fs = this.getFs();
+    if (!fs || typeof fs.writeAsStringAsync !== 'function') {
+      return;
+    }
+    const cleanUri = uri.startsWith('file://') ? uri : `file://${uri}`;
+    await fs.writeAsStringAsync(cleanUri, contents);
+  }
+
+  /**
    * Creates an expo-file-system resumable download session.
    */
   static createDownloadResumable(

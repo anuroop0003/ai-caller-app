@@ -142,10 +142,10 @@ export class ModelFileService {
       }
     } else if (model.category === 'tts') {
       try {
-        const { TextToSpeechService } = await import('@/services/speech/textToSpeechService');
-        await TextToSpeechService.destroy();
+        const { nativeTtsService } = await import('@/services/speech/nativeTtsService');
+        await nativeTtsService.stop();
       } catch (err) {
-        console.warn(`[ModelFileService] Failed to unload TTS engine for ${model.id}:`, err);
+        console.warn(`[ModelFileService] Failed to stop native TTS engine for ${model.id}:`, err);
       }
     } else if (model.category === 'llm') {
       try {

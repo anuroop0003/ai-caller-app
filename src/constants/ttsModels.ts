@@ -1,56 +1,22 @@
 import { TtsModelMetadata } from '@/types/tts';
 
 /**
- * Dedicated Malayalam Piper VITS offline voice model definition.
- * Bundled directly in APK assets at models/vits-piper-ml_IN-meera-medium
+ * Android Native Text-to-Speech system model definition.
+ * Uses hardware-accelerated speech engine without requiring bundled ONNX model files.
  */
-export const PIPER_MEERA_ML_MODEL: TtsModelMetadata = {
-  id: 'vits-piper-ml_IN-meera-medium',
-  name: 'Piper Meera (Malayalam)',
-  language: 'Malayalam (India)',
-  languageCode: 'ml',
-  voiceName: 'Meera',
+export const ANDROID_SYSTEM_TTS_MODEL: TtsModelMetadata = {
+  id: 'android-system-tts',
+  name: 'Android System Text-to-Speech',
+  language: 'Multilingual (System)',
+  languageCode: 'system',
+  voiceName: 'System Voice',
   gender: 'female',
   architecture: 'vits',
-  sampleRate: 22050,
-  modelType: 'vits',
-  files: [
-    {
-      name: 'ml_IN-meera-medium.onnx',
-      type: 'onnx',
-      description: 'Piper VITS Malayalam neural acoustic weights (Medium fidelity)',
-      expectedSizeBytes: 63632970,
-      isRequired: true,
-      bundledByDefault: true,
-    },
-    {
-      name: 'ml_IN-meera-medium.onnx.json',
-      type: 'config',
-      description: 'Audio hyperparameters, phoneme mapping, and sample rate config',
-      expectedSizeBytes: 3182,
-      isRequired: true,
-      bundledByDefault: true,
-    },
-    {
-      name: 'tokens.txt',
-      type: 'tokens',
-      description: 'Piper phoneme and punctuation token table',
-      expectedSizeBytes: 968,
-      isRequired: true,
-      bundledByDefault: true,
-    },
-    {
-      name: 'espeak-ng-data',
-      type: 'espeak',
-      description: 'eSpeak-ng pronunciation lexicon and Malayalam phonemizer data',
-      expectedSizeBytes: 19542000,
-      isRequired: true,
-      bundledByDefault: true,
-    },
-  ],
-} as const;
+  sampleRate: 24000,
+  files: [],
+};
 
-export const DEFAULT_TTS_MODEL = PIPER_MEERA_ML_MODEL;
+export const DEFAULT_TTS_MODEL = ANDROID_SYSTEM_TTS_MODEL;
 
 export interface TtsPresetPhrase {
   readonly id: string;

@@ -1,8 +1,9 @@
 import { View } from 'react-native';
 
-import { useAudioPreviewPlayer } from '@/hooks/use-audio-preview-player';
+import { router } from 'expo-router';
+
+import { SUPPORTED_TTS_LANGUAGES } from '@/constants/ttsLanguages';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useModelReadiness } from '@/hooks/use-model-readiness';
 import { useTtsBenchmark } from '@/hooks/use-tts-benchmark';
 
 import { TtsActionButtons } from './tts-action-buttons';
@@ -15,65 +16,82 @@ export interface TtsBenchmarkCardProps {
   isReady?: boolean;
 }
 
-export function TtsBenchmarkCard({ isReady: externalIsReady }: TtsBenchmarkCardProps = {}) {
+export function TtsBenchmarkCard({ isReady = true }: TtsBenchmarkCardProps = {}) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { isReady: hookIsReady } = useModelReadiness('tts');
-  const isReady = externalIsReady ?? hookIsReady;
 
   const {
+    configuredLanguageCode,
+    configuredVoiceId,
+    rate,
+    availableVoices,
     selectedPresetId,
     inputText,
     isSynthesizing,
+    isPlaying,
     synthesisError,
-    lastResult,
+    lastBenchmark,
     selectPreset,
     updateInputText,
-    synthesize,
+    playTest,
+    stopTest,
   } = useTtsBenchmark();
 
-  const {
-    isPlaying,
-    play,
-    stop,
-    error: playbackError,
-  } = useAudioPreviewPlayer(lastResult?.audioUri ?? null);
+  const langDef =
+    SUPPORTED_TTS_LANGUAGES.find((l) => l.code === configuredLanguageCode) ??
+    SUPPORTED_TTS_LANGUAGES[0];
 
-  const handleSynthesize = async () => {
-    stop();
-    await synthesize();
-  };
+  const configuredVoiceObj = availableVoices.find((v) => v.identifier === configuredVoiceId);
+  const voiceLabel = configuredVoiceObj
+    ? configuredVoiceObj.name || configuredVoiceObj.identifier
+    : configuredVoiceId || 'Selected installed voice';
 
   return (
-    <View className="rounded-md p-4 border border-border bg-card gap-3">
-      <TtsHeader isDark={isDark} />
+    <View className="gap-3">
+      {/* Main Benchmark Card: Follows identical structure to STT and LLM tabs */}
+      <View className="rounded-md p-4 border border-border bg-card gap-3 shadow-sm">
+        {/* 1. Header: Icon, Title, Subtitle, and Status Badge */}
+        <TtsHeader
+          title={`${langDef.name} (${langDef.nativeName})`}
+          subtitle={`${voiceLabel} • ${rate.toFixed(2)}× Rate`}
+        />
 
-      <TtsInputSection
-        selectedPresetId={selectedPresetId}
-        inputText={inputText}
-        onSelectPreset={selectPreset}
-        onChangeText={updateInputText}
-        isDark={isDark}
-      />
+        {/* 2. Presets & Input Text */}
+        <TtsInputSection
+          selectedPresetId={selectedPresetId}
+          inputText={inputText}
+          activeLanguageName={langDef.name}
+          activeLanguageCode={configuredLanguageCode}
+          onSelectPreset={selectPreset}
+          onChangeText={updateInputText}
+          isDark={isDark}
+        />
 
-      <TtsErrorBanner message={synthesisError} severity="error" />
-      <TtsErrorBanner message={playbackError} severity="warning" />
+        {/* 3. Error Banner (when error occurs) */}
+        <TtsErrorBanner message={synthesisError} severity="error" />
 
-      <TtsMetricsPanel
-        isSynthesizing={isSynthesizing}
-        spokenText={lastResult ? inputText : undefined}
-        result={lastResult}
-      />
+        {/* 4. Output / Metrics Panel with Startup Latency & Speech Duration */}
+        <TtsMetricsPanel
+          isSynthesizing={isSynthesizing}
+          isPlaying={isPlaying}
+          benchmark={lastBenchmark}
+        />
 
-      <TtsActionButtons
-        isSynthesizing={isSynthesizing}
-        isPlaying={isPlaying}
-        hasResult={lastResult !== null}
-        canSynthesize={inputText.trim().length > 0}
-        isReady={isReady}
-        onSynthesize={handleSynthesize}
-        onPlay={play}
-      />
+        {/* 5. Action Buttons */}
+        <TtsActionButtons
+          isSynthesizing={isSynthesizing}
+          isPlaying={isPlaying}
+          canPlay={inputText.trim().length > 0}
+          onPlay={playTest}
+          onStop={stopTest}
+          onOpenSettings={() => {
+            router.navigate({
+              pathname: '/models',
+              params: { category: 'tts', language: configuredLanguageCode },
+            });
+          }}
+        />
+      </View>
     </View>
   );
 }

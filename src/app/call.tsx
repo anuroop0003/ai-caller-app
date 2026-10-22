@@ -117,7 +117,7 @@ export default function CallScreen() {
           {!ttsReadiness.isReady && ttsReadiness.missingFiles.length > 0 && (
             <MissingModelFilesCard
               category="tts"
-              modelName="Piper Meera (Malayalam TTS)"
+              modelName="Android System TTS"
               missingFiles={ttsReadiness.missingFiles}
             />
           )}

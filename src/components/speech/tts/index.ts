@@ -4,3 +4,6 @@ export * from './tts-input-section';
 export * from './tts-metrics-panel';
 export * from './tts-error-banner';
 export * from './tts-action-buttons';
+export * from './tts-engine-card';
+export * from './tts-language-card';
+export * from './tts-models-hub';

@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { router } from 'expo-router';
 
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { ModelStatusCard } from '@/components/models';
+import { TtsModelsHub } from '@/components/speech/tts';
 import type { ModelCategory } from '@/constants/models';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ModelRegistry } from '@/services/models';
@@ -15,11 +16,13 @@ import { ModelCategoryTabs } from './model-category-tabs';
 
 export interface ModelDetailsContentProps {
   initialCategory?: ModelCategory;
+  initialLanguage?: string;
   className?: string;
 }
 
 export function ModelDetailsContent({
   initialCategory = 'stt',
+  initialLanguage,
   className,
 }: ModelDetailsContentProps = {}) {
   const colorScheme = useColorScheme();
@@ -40,7 +43,8 @@ export function ModelDetailsContent({
     },
     tts: {
       title: 'Speech Synthesis (TTS)',
-      description: 'Offline Piper VITS neural voice models and phonemizer assets.',
+      description:
+        'Hardware-accelerated Android system speech engine with multilingual Indian & English voices.',
       icon: 'volume-high' as const,
       iconColor: isDark ? '#60a5fa' : '#2563eb',
       iconBg: 'bg-blue-500/10',
@@ -94,7 +98,9 @@ export function ModelDetailsContent({
           </View>
           <View className="h-6 flex-row items-center justify-center px-2 rounded-md bg-card border border-border shrink-0">
             <ThemedText type="code" className="text-xs text-foreground leading-none">
-              {modelsForCategory.length} {modelsForCategory.length === 1 ? 'Model' : 'Models'}
+              {activeCategory === 'tts'
+                ? 'System Engine'
+                : `${modelsForCategory.length} ${modelsForCategory.length === 1 ? 'Model' : 'Models'}`}
             </ThemedText>
           </View>
         </View>
@@ -102,18 +108,41 @@ export function ModelDetailsContent({
         <ThemedText type="muted" className="text-muted-foreground text-xs leading-4">
           {categoryMeta.description}
         </ThemedText>
+
+        {activeCategory === 'tts' && (
+          <View className="flex-row items-center justify-between pt-1">
+            <ThemedText type="code" className="text-[11px] text-muted-foreground">
+              7 Languages Supported
+            </ThemedText>
+            <Pressable
+              onPress={() => handleTestCategory('tts')}
+              accessibilityRole="button"
+              accessibilityLabel="Test TTS in Diagnostics"
+              className="h-7 px-2.5 rounded-md bg-card border border-border flex-row items-center gap-1 active:opacity-75"
+            >
+              <Ionicons name="play" size={11} color={isDark ? '#60a5fa' : '#2563eb'} />
+              <ThemedText type="smallBold" className="text-xs text-foreground">
+                Test in Diagnostics
+              </ThemedText>
+            </Pressable>
+          </View>
+        )}
       </View>
 
       {/* Models List for Active Tab */}
-      <View className="gap-3">
-        {modelsForCategory.map((model) => (
-          <ModelStatusCard
-            key={model.id}
-            model={model}
-            onTestModel={() => handleTestCategory(activeCategory)}
-          />
-        ))}
-      </View>
+      {activeCategory === 'tts' ? (
+        <TtsModelsHub initialLanguage={initialLanguage} />
+      ) : (
+        <View className="gap-3">
+          {modelsForCategory.map((model) => (
+            <ModelStatusCard
+              key={model.id}
+              model={model}
+              onTestModel={() => handleTestCategory(activeCategory)}
+            />
+          ))}
+        </View>
+      )}
     </View>
   );
 }

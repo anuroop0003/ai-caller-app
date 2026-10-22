@@ -275,6 +275,15 @@ export class AudioArbitratorService {
       resolver({ completed: false, durationSec: 0, reason: 'interrupted' });
     }
 
+    if (typeof process === 'undefined' || !process.versions?.node) {
+      try {
+        const { nativeTtsService } = await import('./nativeTtsService');
+        await nativeTtsService.stop();
+      } catch {
+        // Ignore native TTS stop error
+      }
+    }
+
     this.cleanupPlayer();
     this.currentState = 'idle';
   }

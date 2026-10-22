@@ -5,7 +5,7 @@ import {
   LLM_QWEN_0_5B_MODEL,
   LLM_QWEN_1_5B_MODEL,
   STT_INDIC_CONFORMER_MODEL,
-  TTS_PIPER_MEERA_MODEL,
+  TTS_ANDROID_SYSTEM_MODEL,
 } from '@/constants/models';
 import {
   ModelFileService,
@@ -21,7 +21,7 @@ test('1. ModelRegistry', async (t) => {
 
     const ids = all.map((m) => m.id);
     assert.ok(ids.includes('sherpa-onnx-indic-conformer-ml'));
-    assert.ok(ids.includes('vits-piper-ml_IN-meera-medium'));
+    assert.ok(ids.includes('android-system-tts'));
     assert.ok(ids.includes('qwen2.5-0.5b-instruct-q4_k_m'));
     assert.ok(ids.includes('qwen2.5-1.5b-instruct-q4_k_m'));
   });
@@ -45,7 +45,7 @@ test('1. ModelRegistry', async (t) => {
     assert.equal(defaultStt.id, STT_INDIC_CONFORMER_MODEL.id);
 
     const defaultTts = ModelRegistry.getDefaultModel('tts');
-    assert.equal(defaultTts.id, TTS_PIPER_MEERA_MODEL.id);
+    assert.equal(defaultTts.id, TTS_ANDROID_SYSTEM_MODEL.id);
 
     const defaultLlm = ModelRegistry.getDefaultModel('llm');
     assert.equal(defaultLlm.id, LLM_QWEN_0_5B_MODEL.id);
@@ -197,7 +197,6 @@ test('5. Internal Model Service Utilities', async (t) => {
 
 test('6. Model Lifecycle, Coordinated Deletion & Readiness Synchronization', async (t) => {
   const { SpeechRecognitionService } = await import('@/services/speech/speechRecognitionService');
-  const { TextToSpeechService } = await import('@/services/speech/textToSpeechService');
 
   await t.test(
     'SpeechRecognitionService.initialize rejects and prevents execution when model files are missing on disk',
@@ -211,12 +210,12 @@ test('6. Model Lifecycle, Coordinated Deletion & Readiness Synchronization', asy
   );
 
   await t.test(
-    'TextToSpeechService.initialize rejects and prevents execution when model files are missing on disk',
+    'ModelReadinessService.checkTtsReadiness reports ready for Android System TTS',
     async () => {
-      await assert.rejects(
-        () => TextToSpeechService.initialize(),
-        /Required TTS model files.*are missing on disk/
-      );
+      const readiness = await ModelReadinessService.checkTtsReadiness();
+      assert.equal(readiness.isReady, true);
+      assert.equal(readiness.category, 'tts');
+      assert.equal(readiness.status, 'ready');
     }
   );
 
@@ -237,20 +236,17 @@ test('6. Model Lifecycle, Coordinated Deletion & Readiness Synchronization', asy
     }
   );
 
-  await t.test(
-    'ModelFileService.deleteModel unloads TTS engine and broadcasts readiness invalidation',
-    async () => {
-      let notifiedModelId: string | undefined;
-      const unsubscribe = ModelReadinessService.subscribe((modelId) => {
-        notifiedModelId = modelId;
-      });
+  await t.test('ModelFileService.deleteModel broadcasts readiness invalidation', async () => {
+    let notifiedModelId: string | undefined;
+    const unsubscribe = ModelReadinessService.subscribe((modelId) => {
+      notifiedModelId = modelId;
+    });
 
-      try {
-        await ModelFileService.deleteModel(TTS_PIPER_MEERA_MODEL);
-        assert.equal(notifiedModelId, TTS_PIPER_MEERA_MODEL.id);
-      } finally {
-        unsubscribe();
-      }
+    try {
+      await ModelFileService.deleteModel(STT_INDIC_CONFORMER_MODEL);
+      assert.equal(notifiedModelId, STT_INDIC_CONFORMER_MODEL.id);
+    } finally {
+      unsubscribe();
     }
-  );
+  });
 });

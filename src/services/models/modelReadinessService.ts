@@ -90,6 +90,20 @@ export class ModelReadinessService {
       };
     }
 
+    // Android System TTS does not require on-disk neural file downloads
+    if (model.category === 'tts') {
+      return {
+        modelId: model.id,
+        category: 'tts',
+        status: 'ready',
+        isReady: true,
+        storageLocation: 'none',
+        resolvedPath: 'android_system_tts',
+        files: [],
+        missingFiles: [],
+      };
+    }
+
     // 1. Verify app-private storage files
     const verification = await ModelFileService.verifyModelFiles(model);
     const existingRequiredCount = verification.files.filter((f) => f.isRequired && f.exists).length;
@@ -113,8 +127,8 @@ export class ModelReadinessService {
       };
     }
 
-    // 2. Check bundled asset fallback for STT / TTS
-    if (model.category === 'stt' || model.category === 'tts') {
+    // 2. Check bundled asset fallback for STT
+    if (model.category === 'stt') {
       const isBundled = await this.isModelBundledInApkAssets(model.id);
       if (isBundled) {
         return {

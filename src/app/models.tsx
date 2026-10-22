@@ -5,7 +5,7 @@ import { ModelDetailsContent } from '@/components/model-details';
 import type { ModelCategory } from '@/constants/models';
 
 export default function ModelsScreen() {
-  const params = useLocalSearchParams<{ category?: ModelCategory }>();
+  const params = useLocalSearchParams<{ category?: ModelCategory; language?: string }>();
   const initialCategory: ModelCategory =
     params.category === 'stt' || params.category === 'tts' || params.category === 'llm'
       ? params.category
@@ -20,7 +20,11 @@ export default function ModelsScreen() {
         title="Model Management"
         description="Single place to manage, download from Hugging Face, and verify readiness for offline STT, TTS, and LLM assets."
       />
-      <ModelDetailsContent key={initialCategory} initialCategory={initialCategory} />
+      <ModelDetailsContent
+        key={`${initialCategory}-${params.language ?? 'all'}`}
+        initialCategory={initialCategory}
+        initialLanguage={params.language}
+      />
     </ScreenContainer>
   );
 }

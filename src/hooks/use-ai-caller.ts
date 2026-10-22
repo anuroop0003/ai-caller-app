@@ -10,9 +10,10 @@ import {
 import {
   AudioArbitratorService,
   SpeechRecognitionService,
-  TextToSpeechService,
+  nativeTtsService,
 } from '@/services/speech';
 import { callerStore, useCallerStore } from '@/stores/callerStore';
+import { ttsSettingsStore } from '@/stores/ttsSettingsStore';
 import type {
   CallLifecycleState,
   CallTurnState,
@@ -156,24 +157,20 @@ export function useAiCaller(): UseAiCallerResult {
         callerStore.setTurnState('speaking');
         setIsPlayingState(true);
 
-        // Synthesize greeting text
-        let audioUri: string | null = null;
+        // Speak initial greeting turn using Android Native TTS
+        const ttsConfig = ttsSettingsStore.getState();
+        const isSpeakerOn = callerStore.getState().isSpeakerOn;
+
         try {
-          const ttsResult = await TextToSpeechService.synthesize(initialTurn.text);
-          audioUri = ttsResult.audioUri;
-        } catch (ttsErr) {
-          console.warn('[useAiCaller] Initial TTS synthesis failed:', ttsErr);
-        }
-
-        if (!AudioArbitratorService.isSessionValid(token)) return;
-
-        // Play spoken greeting if audio generated
-        if (audioUri) {
-          const isSpeakerOn = callerStore.getState().isSpeakerOn;
-          await AudioArbitratorService.playAudio(audioUri, {
-            volume: isSpeakerOn ? 1.0 : 0.0,
-            sessionToken: token,
+          await nativeTtsService.speak(initialTurn.text, {
+            language: ttsConfig.preferredLanguage,
+            voice: ttsConfig.selectedVoiceId ?? undefined,
+            rate: ttsConfig.rate,
+            pitch: ttsConfig.pitch,
+            volume: isSpeakerOn ? ttsConfig.volume : 0.0,
           });
+        } catch (ttsErr) {
+          console.warn('[useAiCaller] Initial TTS speech failed:', ttsErr);
         }
 
         if (!AudioArbitratorService.isSessionValid(token)) return;
@@ -294,37 +291,30 @@ export function useAiCaller(): UseAiCallerResult {
       return;
     }
 
-    // 3. Speech synthesis of assistant reply
+    // 3. Native speech synthesis of assistant reply
     callerStore.setTurnState('speaking');
     setIsPlayingState(true);
 
-    let replyAudioUri: string | null = null;
+    const ttsConfig = ttsSettingsStore.getState();
+    const isSpeakerOn = callerStore.getState().isSpeakerOn;
+
     try {
-      const ttsResult = await TextToSpeechService.synthesize(assistantTurn.text);
-      replyAudioUri = ttsResult.audioUri;
-    } catch (err) {
-      console.warn('[useAiCaller] Reply TTS synthesis failed:', err);
-    }
-
-    if (!AudioArbitratorService.isSessionValid(token)) {
-      setIsPlayingState(false);
-      return;
-    }
-
-    // 4. Play spoken reply via audio speaker
-    if (replyAudioUri) {
-      const isSpeakerOn = callerStore.getState().isSpeakerOn;
-      await AudioArbitratorService.playAudio(replyAudioUri, {
-        volume: isSpeakerOn ? 1.0 : 0.0,
-        sessionToken: token,
+      await nativeTtsService.speak(assistantTurn.text, {
+        language: ttsConfig.preferredLanguage,
+        voice: ttsConfig.selectedVoiceId ?? undefined,
+        rate: ttsConfig.rate,
+        pitch: ttsConfig.pitch,
+        volume: isSpeakerOn ? ttsConfig.volume : 0.0,
       });
+    } catch (err) {
+      console.warn('[useAiCaller] Reply TTS speech failed:', err);
     }
 
     setIsPlayingState(false);
 
     if (!AudioArbitratorService.isSessionValid(token)) return;
 
-    // 5. Check if call should conclude
+    // 4. Check if call should conclude
     if (assistantTurn.intent === 'call_closing') {
       callerStore.endCall();
     } else {

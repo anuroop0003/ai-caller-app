@@ -48,42 +48,6 @@ export const STT_PACKAGE_MANIFEST: ModelPackageManifest = {
   ],
 };
 
-export const TTS_PACKAGE_MANIFEST: ModelPackageManifest = {
-  id: 'vits-piper-ml_IN-meera-medium',
-  name: 'Piper Meera Malayalam (TTS)',
-  category: 'tts',
-  description: 'Piper VITS offline neural acoustic voice model and Malayalam phonemizer.',
-  totalSizeBytes: 70230742, // ~70.2 MB
-  targetDirectory: 'models/vits-piper-ml_IN-meera-medium',
-  files: [
-    {
-      filename: 'ml_IN-meera-medium.onnx',
-      remoteUrl: `${HF_RAW_BASE}/tts/vits-piper-ml_IN-meera-medium/ml_IN-meera-medium.onnx`,
-      relativePath: 'ml_IN-meera-medium.onnx',
-      fileSizeBytes: 62950174,
-    },
-    {
-      filename: 'ml_IN-meera-medium.onnx.json',
-      remoteUrl: `${HF_RAW_BASE}/tts/vits-piper-ml_IN-meera-medium/ml_IN-meera-medium.onnx.json`,
-      relativePath: 'ml_IN-meera-medium.onnx.json',
-      fileSizeBytes: 3113,
-    },
-    {
-      filename: 'tokens.txt',
-      remoteUrl: `${HF_RAW_BASE}/tts/vits-piper-ml_IN-meera-medium/tokens.txt`,
-      relativePath: 'tokens.txt',
-      fileSizeBytes: 968,
-    },
-    {
-      filename: 'espeak-ng-data.tar.bz2',
-      remoteUrl: `${HF_RAW_BASE}/tts/vits-piper-ml_IN-meera-medium/espeak-ng-data.tar.bz2`,
-      relativePath: 'espeak-ng-data.tar.bz2',
-      fileSizeBytes: 7276487,
-      isArchive: true,
-    },
-  ],
-};
-
 export const LLM_0_5B_PACKAGE_MANIFEST: ModelPackageManifest = {
   id: 'qwen2.5-0.5b-instruct-q4_k_m',
   name: 'Qwen 2.5 0.5B Instruct (GGUF)',
@@ -104,6 +68,5 @@ export const LLM_0_5B_PACKAGE_MANIFEST: ModelPackageManifest = {
 
 export const ALL_MODEL_MANIFESTS: readonly ModelPackageManifest[] = [
   STT_PACKAGE_MANIFEST,
-  TTS_PACKAGE_MANIFEST,
   LLM_0_5B_PACKAGE_MANIFEST,
 ];

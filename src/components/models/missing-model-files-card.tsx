@@ -32,7 +32,7 @@ export function MissingModelFilesCard({
     tts: {
       title: 'Speech Synthesis Files Missing',
       defaultDesc:
-        'Malayalam voice synthesis cannot start because the Piper voice model or eSpeak phonemizer data is missing.',
+        'Speech synthesis cannot start because the required voice data is missing from the system.',
     },
     llm: {
       title: 'Language Model Weights Missing',

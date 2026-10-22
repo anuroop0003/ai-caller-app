@@ -6,11 +6,11 @@ export interface TtsModelMetadata {
   readonly language: string;
   readonly languageCode: string;
   readonly voiceName: string;
-  readonly gender: 'female' | 'male';
-  readonly architecture: 'vits';
-  readonly sampleRate: number;
-  readonly modelType?: 'vits';
-  readonly files: readonly ModelFileSpecification[];
+  readonly gender?: 'female' | 'male';
+  readonly architecture?: string;
+  readonly sampleRate?: number;
+  readonly modelType?: string;
+  readonly files?: readonly ModelFileSpecification[];
 }
 
 export interface TtsSynthesisResult {

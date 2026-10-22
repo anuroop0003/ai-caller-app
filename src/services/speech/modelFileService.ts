@@ -116,8 +116,10 @@ export class ModelFileService {
   ): Promise<ModelInspectionResult> {
     const nativeCheck = this.checkNativeSupport();
 
+    const filesList = model.files ?? [];
+
     if (!nativeCheck.supported) {
-      const unavailableFiles: ModelFileInspection[] = model.files.map((spec) => ({
+      const unavailableFiles: ModelFileInspection[] = filesList.map((spec) => ({
         name: spec.name,
         type: spec.type,
         description: spec.description,
@@ -137,7 +139,7 @@ export class ModelFileService {
 
     const isBundled = await this.isModelBundledInAssets(model.id);
 
-    const inspectedFiles: ModelFileInspection[] = model.files.map((spec) => {
+    const inspectedFiles: ModelFileInspection[] = filesList.map((spec) => {
       const exists = isBundled && spec.bundledByDefault;
       return {
         name: spec.name,

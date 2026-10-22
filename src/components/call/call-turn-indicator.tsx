@@ -120,7 +120,7 @@ export function CallTurnIndicator({
         >
           <Ionicons name="volume-medium-outline" size={16} color="#10b981" />
           <ThemedText className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-            AI സംസാരിക്കുന്നു (Spoken with Piper Meera)...
+            AI സംസാരിക്കുന്നു (Speaking)...
           </ThemedText>
         </View>
       );
