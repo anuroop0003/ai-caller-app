@@ -11,22 +11,6 @@ export function useModelReadiness(modelOrCategory: UnifiedModelPackage | ModelCa
   const modelKey =
     typeof modelOrCategory === 'object' ? modelOrCategory.id : String(modelOrCategory);
 
-  const [prevModelKey, setPrevModelKey] = useState(modelKey);
-  const [readiness, setReadiness] = useState<ModelReadinessResult | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isCheckingInitialReadiness, setIsCheckingInitialReadiness] = useState(true);
-
-  // Synchronous render-pass reset when modelKey changes to prevent 1-frame stale flashes
-  if (prevModelKey !== modelKey) {
-    setPrevModelKey(modelKey);
-    setReadiness(null);
-    setIsLoading(true);
-    setIsCheckingInitialReadiness(true);
-  }
-
-  const isMountedRef = useRef(true);
-  const activeRequestIdRef = useRef(0);
-
   const model = useMemo((): UnifiedModelPackage => {
     if (typeof modelOrCategory === 'object') return modelOrCategory;
     if (modelOrCategory === 'stt' || modelOrCategory === 'tts' || modelOrCategory === 'llm') {
@@ -39,6 +23,24 @@ export function useModelReadiness(modelOrCategory: UnifiedModelPackage | ModelCa
     return found;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelKey]);
+
+  const initialCached = ModelReadinessService.getCachedReadiness(model.id);
+  const [prevModelKey, setPrevModelKey] = useState(modelKey);
+  const [readiness, setReadiness] = useState<ModelReadinessResult | null>(initialCached);
+  const [isLoading, setIsLoading] = useState(!initialCached);
+  const [isCheckingInitialReadiness, setIsCheckingInitialReadiness] = useState(!initialCached);
+
+  // Synchronous render-pass reset when modelKey changes to prevent 1-frame stale flashes
+  if (prevModelKey !== modelKey) {
+    const cached = ModelReadinessService.getCachedReadiness(model.id);
+    setPrevModelKey(modelKey);
+    setReadiness(cached);
+    setIsLoading(!cached);
+    setIsCheckingInitialReadiness(!cached);
+  }
+
+  const isMountedRef = useRef(true);
+  const activeRequestIdRef = useRef(0);
 
   const checkReadiness = useCallback(async () => {
     const requestId = ++activeRequestIdRef.current;

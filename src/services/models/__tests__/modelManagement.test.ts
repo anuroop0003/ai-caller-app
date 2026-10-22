@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   LLM_QWEN_0_5B_MODEL,
   LLM_QWEN_1_5B_MODEL,
+  QWEN_2_5_0_5B_MODEL,
   STT_INDIC_CONFORMER_MODEL,
   TTS_ANDROID_SYSTEM_MODEL,
 } from '@/constants/models';
@@ -236,17 +237,319 @@ test('6. Model Lifecycle, Coordinated Deletion & Readiness Synchronization', asy
     }
   );
 
-  await t.test('ModelFileService.deleteModel broadcasts readiness invalidation', async () => {
-    let notifiedModelId: string | undefined;
-    const unsubscribe = ModelReadinessService.subscribe((modelId) => {
-      notifiedModelId = modelId;
+  await t.test(
+    'ModelFileService.deleteModel unloads LLM generator and calls destroy on active runtime',
+    async () => {
+      const { callerStore } = await import('@/stores/callerStore');
+      const { LlmBenchmarkService } = await import('@/services/dialogue/llm');
+
+      let wasRuntimeDestroyed = false;
+      const mockRuntime = {
+        runtimeType: 'mock' as const,
+        isInitialized: () => true,
+        getActiveModel: () => QWEN_2_5_0_5B_MODEL,
+        loadModel: async () => {},
+        generate: async () => ({
+          text: 'test',
+          metrics: {
+            timeToFirstTokenMs: 10,
+            totalGenerationTimeMs: 20,
+            promptTokens: 5,
+            completionTokens: 5,
+            tokensPerSecond: 250,
+          },
+        }),
+        stopGeneration: async () => {},
+        destroy: async () => {
+          wasRuntimeDestroyed = true;
+        },
+      };
+
+      const { LocalLlmResponseGenerator } = await import('@/services/dialogue/llm');
+      const generator = new LocalLlmResponseGenerator({ runtime: mockRuntime });
+      callerStore.setResponseGenerator(generator);
+      assert.equal(callerStore.getResponseGenerator().id, 'local_llm_generator');
+
+      await ModelFileService.deleteModel(LLM_QWEN_0_5B_MODEL);
+
+      assert.equal(wasRuntimeDestroyed, true);
+      assert.equal(callerStore.getResponseGenerator().id, 'deterministic-offline-v1');
+    }
+  );
+});
+
+test('7. Diagnostics Prerequisite & Lifecycle Protection', async (t) => {
+  const { AudioBenchmarkService } = await import('@/services/speech/audioBenchmarkService');
+
+  await t.test(
+    'AudioBenchmarkService.runBenchmark rejects before execution when STT model files are absent',
+    async () => {
+      const mockSample = {
+        id: 'test-sample',
+        title: 'Mock Sample',
+        asset: 1,
+        language: 'Malayalam',
+        languageCode: 'ml' as const,
+        speakerGender: 'male' as const,
+        speakerLabel: 'Speaker',
+        durationSeconds: 1.5,
+        durationLabel: '1.5s',
+        description: 'Mock audio test sample',
+        transcript: 'നമസ്കാരം',
+        category: 'conversational' as const,
+      };
+
+      await assert.rejects(
+        () => AudioBenchmarkService.runBenchmark(mockSample),
+        /Required speech model is not ready/
+      );
+    }
+  );
+});
+
+test('8. LlmBenchmarkService Decoupled Orchestration & Prompting', async (t) => {
+  const { LlmBenchmarkService, buildChatMlPrompt } = await import('@/services/dialogue/llm');
+
+  await t.test('buildChatMlPrompt generates valid ChatML markers', () => {
+    const prompt = buildChatMlPrompt('നമസ്കാരം');
+    assert.ok(prompt.includes('<|im_start|>system'));
+    assert.ok(prompt.includes('<|im_start|>user\nനമസ്കാരം\n<|im_end|>'));
+    assert.ok(prompt.endsWith('<|im_start|>assistant\n'));
+  });
+
+  await t.test('runDeterministicBenchmark produces valid result and metrics', async () => {
+    const result = await LlmBenchmarkService.runDeterministicBenchmark('ഡോക്ടറെ കാണണം');
+    assert.equal(result.modelId, 'deterministic-offline-v1');
+    assert.ok(result.response.length > 0);
+    assert.ok(result.totalTurnaroundMs >= 0);
+    assert.ok(result.tokensPerSecond > 0);
+  });
+
+  await t.test('runLlmBenchmark executes mock runtime and cleans up resources', async () => {
+    const result = await LlmBenchmarkService.runLlmBenchmark({
+      model: LLM_QWEN_0_5B_MODEL,
+      metadata: QWEN_2_5_0_5B_MODEL,
+      isRealNative: false,
+      prompt: 'ഹലോ',
     });
 
-    try {
-      await ModelFileService.deleteModel(STT_INDIC_CONFORMER_MODEL);
-      assert.equal(notifiedModelId, STT_INDIC_CONFORMER_MODEL.id);
-    } finally {
-      unsubscribe();
+    assert.equal(result.modelId, LLM_QWEN_0_5B_MODEL.id);
+    assert.equal(result.runtimeType, 'mock');
+    assert.ok(result.response.length > 0);
+    assert.ok(result.completionTokens > 0);
+  });
+
+  await t.test('canonical AVAILABLE_LLM_MODELS contains valid Qwen packages', async () => {
+    const { AVAILABLE_LLM_MODELS, toLlmMetadata } = await import('@/constants/models');
+    assert.equal(AVAILABLE_LLM_MODELS.length, 2);
+
+    for (const model of AVAILABLE_LLM_MODELS) {
+      assert.equal(model.category, 'llm');
+      assert.ok(model.files.length > 0);
+      assert.ok(model.files[0].relativePath.endsWith('.gguf'));
+
+      const meta = toLlmMetadata(model);
+      assert.equal(meta.id, model.id);
+      assert.equal(meta.architecture, 'qwen2.5');
+      assert.equal(meta.quantization, 'q4_k_m');
     }
   });
+});
+
+test('9. Diagnostics Skeletons & Readiness Cache Transitions', async (t) => {
+  const { ModelReadinessService, ModelRegistry } = await import('@/services/models');
+
+  await t.test(
+    'ModelReadinessService caches evaluated result and evicts on notification',
+    async () => {
+      const sttModel = ModelRegistry.getDefaultModel('stt');
+
+      // 1. Evict any previous cache
+      ModelReadinessService.clearCache(sttModel.id);
+      assert.equal(ModelReadinessService.getCachedReadiness(sttModel.id), null);
+
+      // 2. Perform check
+      const checked = await ModelReadinessService.checkModelReadiness(sttModel);
+      assert.ok(checked);
+
+      // 3. Cache must now be populated
+      const cached = ModelReadinessService.getCachedReadiness(sttModel.id);
+      assert.ok(cached);
+      assert.equal(cached.modelId, sttModel.id);
+
+      // 4. Invalidate via notification
+      ModelReadinessService.notifyModelChanged(sttModel.id);
+      assert.equal(ModelReadinessService.getCachedReadiness(sttModel.id), null);
+    }
+  );
+
+  await t.test(
+    'ModelReadinessService caches TTS readiness synchronously without file checks',
+    async () => {
+      const ttsModel = ModelRegistry.getDefaultModel('tts');
+      ModelReadinessService.clearCache(ttsModel.id);
+
+      const checked = await ModelReadinessService.checkModelReadiness(ttsModel);
+      assert.equal(checked.isReady, true);
+      assert.equal(checked.status, 'ready');
+
+      const cached = ModelReadinessService.getCachedReadiness(ttsModel.id);
+      assert.ok(cached);
+      assert.equal(cached.isReady, true);
+    }
+  );
+
+  await t.test(
+    'ModelReadinessService caches LLM readiness and clears globally on notifyModelChanged without id',
+    async () => {
+      const llmModel = ModelRegistry.getDefaultModel('llm');
+
+      const checked = await ModelReadinessService.checkModelReadiness(llmModel);
+      assert.ok(checked);
+      assert.ok(ModelReadinessService.getCachedReadiness(llmModel.id));
+
+      // Global cache invalidation
+      ModelReadinessService.notifyModelChanged();
+      assert.equal(ModelReadinessService.getCachedReadiness(llmModel.id), null);
+    }
+  );
+
+  await t.test(
+    'Successful model download invalidates readiness cache and causes a recheck',
+    async () => {
+      const llmModel = ModelRegistry.getDefaultModel('llm');
+
+      // 1. Initial readiness check caches missing status
+      const initial = await ModelReadinessService.checkModelReadiness(llmModel);
+      assert.equal(initial.status, 'not_downloaded');
+      assert.ok(ModelReadinessService.getCachedReadiness(llmModel.id));
+
+      // 2. Track readiness invalidation notification
+      let notifiedId: string | undefined = undefined;
+      const unsub = ModelReadinessService.subscribe((id) => {
+        notifiedId = id;
+      });
+
+      try {
+        // 3. Simulating download completion: ModelReadinessService.notifyModelChanged is triggered
+        ModelReadinessService.notifyModelChanged(llmModel.id);
+        assert.equal(notifiedId, llmModel.id);
+
+        // 4. Cache must be completely evicted
+        assert.equal(ModelReadinessService.getCachedReadiness(llmModel.id), null);
+
+        // 5. Subsequent call executes a real re-check rather than returning stale cache
+        const recheck = await ModelReadinessService.checkModelReadiness(llmModel);
+        assert.ok(recheck);
+        assert.equal(recheck.modelId, llmModel.id);
+      } finally {
+        unsub();
+      }
+    }
+  );
+
+  await t.test(
+    'Cancelled and failed downloads do not incorrectly mark a model as ready',
+    async () => {
+      const { modelDownloadService } = await import('@/services/models');
+      const llmModel = ModelRegistry.getDefaultModel('llm');
+
+      // 1. Cancelled download check
+      await modelDownloadService.cancelDownload();
+      const afterCancel = await ModelReadinessService.checkModelReadiness(llmModel);
+      assert.equal(afterCancel.isReady, false);
+      assert.notEqual(afterCancel.status, 'ready');
+
+      // 2. Failed download check (mock assertStorageAvailable failure)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const downloadServiceAny = modelDownloadService as any;
+      const originalAssert = downloadServiceAny.assertStorageAvailable;
+      downloadServiceAny.assertStorageAvailable = async () => {
+        throw new Error('Disk full simulation');
+      };
+
+      try {
+        const success = await modelDownloadService.downloadModel(llmModel);
+        assert.equal(success, false);
+        assert.equal(modelDownloadService.getCurrentState().status, 'error');
+
+        // After failure, readiness check must still report unready
+        const afterFailure = await ModelReadinessService.checkModelReadiness(llmModel);
+        assert.equal(afterFailure.isReady, false);
+        assert.notEqual(afterFailure.status, 'ready');
+      } finally {
+        downloadServiceAny.assertStorageAvailable = originalAssert;
+      }
+    }
+  );
+
+  await t.test(
+    'Unexpected filesystem exceptions produce failure result without unhandled rejections in pipeline',
+    async () => {
+      const { ModelFileService } = await import('@/services/models');
+
+      const originalVerify = ModelFileService.verifyModelFiles;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (ModelFileService as any).verifyModelFiles = async () => {
+        throw new Error('EIO: hardware disk I/O failure');
+      };
+
+      try {
+        // Full pipeline check aggregate operation must NOT reject with unhandled rejection
+        const pipeline = await ModelReadinessService.checkFullPipelineReadiness();
+        assert.equal(pipeline.isReady, false);
+        assert.equal(pipeline.stt.status, 'failed');
+        assert.ok(pipeline.stt.errorMessage?.includes('hardware disk I/O failure'));
+        assert.equal(pipeline.llm.status, 'failed');
+        assert.ok(pipeline.missingSummary.includes('STT (Speech Recognition)'));
+      } finally {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (ModelFileService as any).verifyModelFiles = originalVerify;
+      }
+    }
+  );
+
+  await t.test(
+    'Transient filesystem errors are not cached as confirmed missing models',
+    async () => {
+      const { ModelFileService } = await import('@/services/models');
+      const llmModel = ModelRegistry.getDefaultModel('llm');
+
+      // Ensure cache is clear
+      ModelReadinessService.clearCache(llmModel.id);
+      assert.equal(ModelReadinessService.getCachedReadiness(llmModel.id), null);
+
+      // 1. Transient failure occurs during filesystem read
+      const originalVerify = ModelFileService.verifyModelFiles;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (ModelFileService as any).verifyModelFiles = async () => {
+        throw new Error('EBUSY: resource temporarily unavailable');
+      };
+
+      try {
+        const failedCheck = await ModelReadinessService.checkModelReadiness(llmModel);
+        assert.equal(failedCheck.status, 'failed');
+        assert.equal(failedCheck.isReady, false);
+
+        // 2. CRITICAL: Cache must NOT have retained this transient failure as a permanent missing model
+        assert.equal(
+          ModelReadinessService.getCachedReadiness(llmModel.id),
+          null,
+          'Transient error must not be cached'
+        );
+      } finally {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (ModelFileService as any).verifyModelFiles = originalVerify;
+      }
+
+      // 3. Transient error resolved: next check returns genuine state and caches it
+      const recoveredCheck = await ModelReadinessService.checkModelReadiness(llmModel);
+      assert.equal(recoveredCheck.status, 'not_downloaded');
+      assert.equal(
+        ModelReadinessService.getCachedReadiness(llmModel.id)?.status,
+        'not_downloaded',
+        'Genuine missing model state is now cached'
+      );
+    }
+  );
 });

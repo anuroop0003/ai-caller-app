@@ -50,8 +50,11 @@ export function useTtsBenchmark(): UseTtsBenchmarkResult {
   const configuredVoiceId = langConfig.voiceId;
 
   // Installed voices on the Android device for the configured language
-  const [availableVoices, setAvailableVoices] = useState<readonly TtsVoiceOption[]>([]);
-  const [isLoadingVoices, setIsLoadingVoices] = useState<boolean>(true);
+  const initialCachedVoices = nativeTtsService.getCachedVoicesForLanguage(configuredLanguageCode);
+  const [availableVoices, setAvailableVoices] = useState<readonly TtsVoiceOption[]>(
+    initialCachedVoices ?? []
+  );
+  const [isLoadingVoices, setIsLoadingVoices] = useState<boolean>(!initialCachedVoices);
 
   // Temporary in-memory voice override for Diagnostics testing (does NOT persist to store)
   const [overrideVoiceId, setOverrideVoiceId] = useState<string | null>(null);
@@ -75,10 +78,31 @@ export function useTtsBenchmark(): UseTtsBenchmarkResult {
   const speechStartRef = useRef<number>(0);
   const prevLangRef = useRef<string>(configuredLanguageCode);
 
+  // Synchronously synchronize state during render if configuredLanguageCode changed
+  if (prevLangRef.current !== configuredLanguageCode) {
+    prevLangRef.current = configuredLanguageCode;
+    const nextCached = nativeTtsService.getCachedVoicesForLanguage(configuredLanguageCode);
+    setAvailableVoices(nextCached ?? []);
+    setIsLoadingVoices(!nextCached);
+    setOverrideVoiceId(null);
+    setLastBenchmark(null);
+    setSynthesisError(null);
+
+    if (configuredLanguageCode === 'ml-IN') {
+      setSelectedPresetId(MALAYALAM_TTS_PRESETS[0].id);
+      setInputText(MALAYALAM_TTS_PRESETS[0].text);
+    } else {
+      setSelectedPresetId('sample-text');
+      setInputText(currentLangDef.sampleText);
+    }
+  }
+
   // Load available voices for configured language
   useEffect(() => {
     let cancelled = false;
-    setIsLoadingVoices(true);
+    if (!nativeTtsService.hasCachedVoices()) {
+      setIsLoadingVoices(true);
+    }
 
     nativeTtsService
       .getVoicesForLanguage(configuredLanguageCode)
@@ -110,28 +134,6 @@ export function useTtsBenchmark(): UseTtsBenchmarkResult {
       nativeTtsService.stop();
     };
   }, []);
-
-  // When configured language changes in Models page, sync Diagnostics state
-  useEffect(() => {
-    if (prevLangRef.current !== configuredLanguageCode) {
-      prevLangRef.current = configuredLanguageCode;
-      setOverrideVoiceId(null);
-      setLastBenchmark(null);
-      setSynthesisError(null);
-
-      const newLangDef =
-        SUPPORTED_TTS_LANGUAGES.find((l) => l.code === configuredLanguageCode) ??
-        SUPPORTED_TTS_LANGUAGES[0];
-
-      if (configuredLanguageCode === 'ml-IN') {
-        setSelectedPresetId(MALAYALAM_TTS_PRESETS[0].id);
-        setInputText(MALAYALAM_TTS_PRESETS[0].text);
-      } else {
-        setSelectedPresetId('sample-text');
-        setInputText(newLangDef.sampleText);
-      }
-    }
-  }, [configuredLanguageCode]);
 
   const selectPreset = useCallback(
     (presetId: string) => {

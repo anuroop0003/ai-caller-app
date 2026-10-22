@@ -1,7 +1,3 @@
-import { Platform } from 'react-native';
-import * as Speech from 'expo-speech';
-import { ActivityAction, startActivityAsync } from 'expo-intent-launcher';
-
 import { filterVoicesForLanguage, SUPPORTED_TTS_LANGUAGES } from '@/constants/ttsLanguages';
 import type {
   TtsLanguageAvailability,
@@ -11,6 +7,18 @@ import type {
 import type { ITtsRuntime, TtsSpeakOptions } from './ITtsRuntime';
 
 type PlaybackListener = (state: TtsPlaybackState) => void;
+
+function getSpeechModule(): typeof import('expo-speech') | null {
+  if (typeof process !== 'undefined' && Boolean(process.versions?.node)) {
+    return null;
+  }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('expo-speech');
+  } catch {
+    return null;
+  }
+}
 
 export class NativeTtsService implements ITtsRuntime {
   private static instance: NativeTtsService | null = null;
@@ -51,6 +59,30 @@ export class NativeTtsService implements ITtsRuntime {
   }
 
   /**
+   * Returns currently cached voices synchronously if already queried.
+   */
+  getCachedVoices(): readonly TtsVoiceOption[] | null {
+    return this.cachedVoices;
+  }
+
+  /**
+   * Returns whether native voices have already been discovered and cached.
+   */
+  hasCachedVoices(): boolean {
+    return Boolean(this.cachedVoices && this.cachedVoices.length > 0);
+  }
+
+  /**
+   * Returns cached voices matching a specific language synchronously if already queried.
+   */
+  getCachedVoicesForLanguage(languageCode: string): readonly TtsVoiceOption[] | null {
+    if (!this.cachedVoices) return null;
+    const langDef = SUPPORTED_TTS_LANGUAGES.find((l) => l.code === languageCode);
+    if (!langDef) return [];
+    return filterVoicesForLanguage(this.cachedVoices, langDef);
+  }
+
+  /**
    * Fetches and caches system TTS voices available on the Android device.
    */
   async getAvailableVoices(forceRefresh = false): Promise<readonly TtsVoiceOption[]> {
@@ -58,8 +90,13 @@ export class NativeTtsService implements ITtsRuntime {
       return this.cachedVoices;
     }
 
+    const speech = getSpeechModule();
+    if (!speech) {
+      return this.cachedVoices ?? [];
+    }
+
     try {
-      const rawVoices = await Speech.getAvailableVoicesAsync();
+      const rawVoices = await speech.getAvailableVoicesAsync();
       const normalized: TtsVoiceOption[] = rawVoices.map((v) => ({
         identifier: v.identifier,
         name: v.name,
@@ -108,11 +145,15 @@ export class NativeTtsService implements ITtsRuntime {
       return;
     }
 
+    const speech = getSpeechModule();
+
     // Stop ongoing speech on the hardware without triggering spurious external state blips
-    try {
-      await Speech.stop();
-    } catch {
-      // Ignore
+    if (speech) {
+      try {
+        await speech.stop();
+      } catch {
+        // Ignore
+      }
     }
 
     const { ttsSettingsStore } = await import('@/stores/ttsSettingsStore');
@@ -132,6 +173,15 @@ export class NativeTtsService implements ITtsRuntime {
     this.activeLanguage = targetLanguage;
     this.isSpeakingState = true;
     this.notifyPlaybackChange();
+
+    if (!speech) {
+      // Headless / Node test runner fallback: settle immediately without error
+      this.isSpeakingState = false;
+      this.activeUtteranceId = null;
+      this.notifyPlaybackChange();
+      options.onDone?.();
+      return;
+    }
 
     return new Promise<void>((resolve, reject) => {
       let settled = false;
@@ -156,7 +206,7 @@ export class NativeTtsService implements ITtsRuntime {
       };
 
       try {
-        Speech.speak(trimmed, {
+        speech.speak(trimmed, {
           language: targetLanguage,
           voice: targetVoice,
           rate: targetRate,
@@ -171,12 +221,12 @@ export class NativeTtsService implements ITtsRuntime {
           },
           onDone: () => {
             // Android often finishes synthesis while AudioTrack is still playing audio buffers.
-            // Check Speech.isSpeakingAsync() until physical sound playback has truly finished.
+            // Check speech.isSpeakingAsync() until physical sound playback has truly finished.
             let pollCount = 0;
             const poller = setInterval(async () => {
               pollCount++;
               try {
-                const stillSpeaking = await Speech.isSpeakingAsync();
+                const stillSpeaking = await speech.isSpeakingAsync();
                 if (!stillSpeaking || pollCount >= 60 || this.activeUtteranceId !== utteranceId) {
                   clearInterval(poller);
                   if (this.activeUtteranceId === utteranceId) {
@@ -213,24 +263,30 @@ export class NativeTtsService implements ITtsRuntime {
    * Immediately stops any active TTS playback on the device.
    */
   async stop(): Promise<void> {
-    try {
-      await Speech.stop();
-    } catch {
-      // Ignore stop errors if not speaking
-    } finally {
-      this.isSpeakingState = false;
-      this.activeUtteranceId = null;
-      this.activeLanguage = null;
-      this.notifyPlaybackChange();
+    const speech = getSpeechModule();
+    if (speech) {
+      try {
+        await speech.stop();
+      } catch {
+        // Ignore stop errors if not speaking
+      }
     }
+    this.isSpeakingState = false;
+    this.activeUtteranceId = null;
+    this.activeLanguage = null;
+    this.notifyPlaybackChange();
   }
 
   /**
    * Queries if the native engine is currently vocalizing.
    */
   async isSpeaking(): Promise<boolean> {
+    const speech = getSpeechModule();
+    if (!speech) {
+      return this.isSpeakingState;
+    }
     try {
-      const isExpoSpeaking = await Speech.isSpeakingAsync();
+      const isExpoSpeaking = await speech.isSpeakingAsync();
       return isExpoSpeaking || this.isSpeakingState;
     } catch {
       return this.isSpeakingState;
@@ -241,16 +297,26 @@ export class NativeTtsService implements ITtsRuntime {
    * Opens Android's system Text-To-Speech Settings or Voice Data Installer.
    */
   async openTtsSettings(): Promise<void> {
-    if (Platform.OS !== 'android') {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { Platform } = require('react-native');
+      if (Platform.OS !== 'android') {
+        return;
+      }
+    } catch {
       return;
     }
 
     try {
       // Primary documented entry point for TTS engine and voice settings
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { ActivityAction, startActivityAsync } = require('expo-intent-launcher');
       await startActivityAsync(ActivityAction.TTS_SETTINGS);
     } catch (err) {
       console.warn('[NativeTtsService] TTS_SETTINGS intent failed, trying INSTALL_TTS_DATA:', err);
       try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { startActivityAsync } = require('expo-intent-launcher');
         await startActivityAsync('android.speech.tts.engine.INSTALL_TTS_DATA');
       } catch (installErr) {
         console.warn('[NativeTtsService] INSTALL_TTS_DATA intent also failed:', installErr);

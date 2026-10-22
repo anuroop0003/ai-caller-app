@@ -26,10 +26,17 @@ export interface UnifiedModelPackage {
   readonly version?: string;
   // Category-specific properties
   readonly language?: string;
+  readonly languageCode?: string;
   readonly sampleRate?: number;
   readonly voiceName?: string;
   readonly parameterSize?: string;
   readonly quantization?: string;
+  readonly architecture?: string;
+  readonly modelType?: string;
+  readonly contextLength?: number;
+  readonly malayalamProficiency?: 'fair' | 'good' | 'excellent';
+  readonly recommendedThreads?: number;
+  readonly sha256?: string;
 }
 
 export interface FileVerificationItem {

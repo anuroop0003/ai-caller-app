@@ -7,30 +7,37 @@ export interface LlmPromptPreset {
   id: string;
   label: string;
   prompt: string;
+  language?: 'ml' | 'en' | 'custom';
 }
 
-export const MALAYALAM_LLM_PRESETS: readonly LlmPromptPreset[] = [
+export const LLM_TEST_PROMPTS: readonly LlmPromptPreset[] = [
   {
-    id: 'appointment',
-    label: 'Appointment',
+    id: 'ml_appointment',
+    label: 'Malayalam (Doctor)',
     prompt: 'നമസ്കാരം, എനിക്ക് ഡോക്ടറെ കാണാൻ ഒരു അപ്പോയിന്റ്മെന്റ് വേണം.',
+    language: 'ml',
   },
   {
-    id: 'timings',
-    label: 'Office Timings',
+    id: 'ml_timings',
+    label: 'Malayalam (Timings)',
     prompt: 'നിങ്ങളുടെ ഓഫീസ് സമയം എപ്പോഴാണ് എന്ന് പറയാമോ?',
+    language: 'ml',
   },
   {
-    id: 'greeting',
-    label: 'Greeting',
-    prompt: 'നമസ്കാരം, സുഖമാണോ? എന്താണ് ഇന്നത്തെ വിശേഷങ്ങൾ?',
+    id: 'en_booking',
+    label: 'English (Booking)',
+    prompt: 'Hello, I would like to schedule a consultation appointment for tomorrow morning.',
+    language: 'en',
   },
   {
-    id: 'services',
-    label: 'Services',
-    prompt: 'നിങ്ങൾ നൽകുന്ന സേവനങ്ങളെക്കുറിച്ച് കുറച്ച് പറയാമോ?',
+    id: 'custom',
+    label: 'Custom Prompt',
+    prompt: '',
+    language: 'custom',
   },
 ];
+
+export const MALAYALAM_LLM_PRESETS = LLM_TEST_PROMPTS;
 
 export interface LlmPromptSectionProps {
   selectedPresetId: string;
@@ -51,13 +58,13 @@ export function LlmPromptSection({
 }: LlmPromptSectionProps) {
   return (
     <View className="gap-2.5">
-      {/* Preset Malayalam Phrase Selectors */}
+      {/* Test Prompts Row */}
       <View className="gap-1.5">
         <ThemedText type="small" className="text-xs text-muted-foreground font-medium">
-          Malayalam Prompt Presets:
+          Test Prompts:
         </ThemedText>
         <View className="flex-row flex-wrap gap-1.5">
-          {MALAYALAM_LLM_PRESETS.map((preset) => {
+          {LLM_TEST_PROMPTS.map((preset) => {
             const isSelected = selectedPresetId === preset.id;
             return (
               <Pressable
@@ -68,9 +75,7 @@ export function LlmPromptSection({
                 accessibilityLabel={`Select prompt preset: ${preset.label}`}
                 className={cn(
                   'px-2.5 py-1 rounded-md border text-xs active:opacity-75',
-                  isSelected
-                    ? 'bg-card border-border/80'
-                    : 'bg-secondary text-secondary-foreground border border-border',
+                  isSelected ? 'bg-primary border-primary' : 'bg-secondary border border-border',
                   disabled && 'opacity-60'
                 )}
               >
@@ -78,7 +83,7 @@ export function LlmPromptSection({
                   type="small"
                   className={cn(
                     'text-xs',
-                    isSelected ? 'text-foreground font-semibold' : 'text-secondary-foreground'
+                    isSelected ? 'text-primary-foreground font-semibold' : 'text-foreground'
                   )}
                 >
                   {preset.label}
@@ -89,25 +94,22 @@ export function LlmPromptSection({
         </View>
       </View>
 
-      {/* Editable Malayalam Input Text Box */}
+      {/* Editable Input Text Box */}
       <View className="gap-1">
         <TextInput
           value={inputText}
           onChangeText={onChangeText}
           editable={!disabled}
-          placeholder="Enter Malayalam prompt to test..."
+          placeholder="Enter prompt utterance to test..."
           placeholderTextColor={isDark ? '#71717a' : '#a1a1aa'}
           multiline
           numberOfLines={2}
+          textAlignVertical="top"
           className={cn(
-            'p-2.5 rounded-md border border-border bg-secondary/30 text-foreground text-sm font-normal min-h-[64px]',
+            'rounded-md border border-border bg-background p-2.5 text-sm text-foreground min-h-[72px]',
             disabled && 'opacity-60'
           )}
-          textAlignVertical="top"
         />
-        <ThemedText type="small" className="text-[11px] text-muted-foreground text-right">
-          {inputText.length} characters
-        </ThemedText>
       </View>
     </View>
   );

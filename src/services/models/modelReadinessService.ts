@@ -11,6 +11,25 @@ export type ReadinessChangeListener = (modelId?: string) => void;
 
 export class ModelReadinessService {
   private static readinessListeners = new Set<ReadinessChangeListener>();
+  private static readinessCache = new Map<string, ModelReadinessResult>();
+
+  /**
+   * Retrieves synchronously cached readiness result for a model if available.
+   */
+  static getCachedReadiness(modelId: string): ModelReadinessResult | null {
+    return this.readinessCache.get(modelId) ?? null;
+  }
+
+  /**
+   * Clears the in-memory readiness cache for a specific model or all models.
+   */
+  static clearCache(modelId?: string): void {
+    if (modelId) {
+      this.readinessCache.delete(modelId);
+    } else {
+      this.readinessCache.clear();
+    }
+  }
 
   /**
    * Subscribes to model readiness change events (e.g., deletions, downloads, cache evictions).
@@ -23,9 +42,10 @@ export class ModelReadinessService {
   }
 
   /**
-   * Broadcasts a model change or deletion event to all subscribers.
+   * Broadcasts a model change or deletion event to all subscribers and evicts cached state.
    */
   static notifyModelChanged(modelId?: string): void {
+    this.clearCache(modelId);
     this.readinessListeners.forEach((cb) => {
       try {
         cb(modelId);
@@ -90,9 +110,11 @@ export class ModelReadinessService {
       };
     }
 
+    let result: ModelReadinessResult;
+
     // Android System TTS does not require on-disk neural file downloads
     if (model.category === 'tts') {
-      return {
+      result = {
         modelId: model.id,
         category: 'tts',
         status: 'ready',
@@ -102,10 +124,29 @@ export class ModelReadinessService {
         files: [],
         missingFiles: [],
       };
+      this.readinessCache.set(model.id, result);
+      return result;
     }
 
     // 1. Verify app-private storage files
-    const verification = await ModelFileService.verifyModelFiles(model);
+    let verification;
+    try {
+      verification = await ModelFileService.verifyModelFiles(model);
+    } catch (err) {
+      result = {
+        modelId: model.id,
+        category: model.category,
+        status: 'failed',
+        isReady: false,
+        storageLocation: 'none',
+        resolvedPath: null,
+        files: [],
+        missingFiles: [],
+        errorMessage: err instanceof Error ? err.message : String(err),
+      };
+      return result;
+    }
+
     const existingRequiredCount = verification.files.filter((f) => f.isRequired && f.exists).length;
 
     // Check if fully verified in app storage
@@ -115,7 +156,7 @@ export class ModelReadinessService {
           ? ModelFileService.getFilePath(model, model.files[0]?.relativePath ?? '')
           : ModelFileService.getModelDir(model);
 
-      return {
+      result = {
         modelId: model.id,
         category: model.category,
         status: 'ready',
@@ -125,13 +166,15 @@ export class ModelReadinessService {
         files: verification.files,
         missingFiles: [],
       };
+      this.readinessCache.set(model.id, result);
+      return result;
     }
 
     // 2. Check bundled asset fallback for STT
     if (model.category === 'stt') {
       const isBundled = await this.isModelBundledInApkAssets(model.id);
       if (isBundled) {
-        return {
+        result = {
           modelId: model.id,
           category: model.category,
           status: 'ready',
@@ -141,6 +184,8 @@ export class ModelReadinessService {
           files: verification.files,
           missingFiles: [],
         };
+        this.readinessCache.set(model.id, result);
+        return result;
       }
     }
 
@@ -153,7 +198,7 @@ export class ModelReadinessService {
       storageLocation = 'app_storage';
     }
 
-    return {
+    result = {
       modelId: model.id,
       category: model.category,
       status,
@@ -163,6 +208,8 @@ export class ModelReadinessService {
       files: verification.files,
       missingFiles: verification.missingFiles,
     };
+    this.readinessCache.set(model.id, result);
+    return result;
   }
 
   static async checkSttReadiness(): Promise<ModelReadinessResult> {

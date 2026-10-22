@@ -151,7 +151,21 @@ export class ModelFileService {
       try {
         const { callerStore } = await import('@/stores/callerStore');
         const activeGen = callerStore.getResponseGenerator();
-        if (activeGen.id.includes(model.id) || activeGen.id.includes('qwen')) {
+        if (
+          activeGen.id.includes(model.id) ||
+          activeGen.id.includes('qwen') ||
+          activeGen.id.includes('llm')
+        ) {
+          if ('getRuntime' in activeGen && typeof (activeGen as any).getRuntime === 'function') {
+            try {
+              const runtime = (activeGen as any).getRuntime();
+              if (runtime && typeof runtime.destroy === 'function') {
+                await runtime.destroy();
+              }
+            } catch (destroyErr) {
+              console.warn('[ModelFileService] Failed to destroy active LLM runtime:', destroyErr);
+            }
+          }
           const { defaultDialogueEngine } =
             await import('@/services/dialogue/callerDialogueEngine');
           callerStore.setResponseGenerator(defaultDialogueEngine);

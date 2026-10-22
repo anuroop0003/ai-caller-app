@@ -15,13 +15,13 @@ export function LlmMetricsPanel({ isBenchmarking = false, result }: LlmMetricsPa
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  // 1. Loading / In-Progress State
+  // 1. Loading / In-Progress State (Neutral blue matching STT and TTS)
   if (isBenchmarking) {
     return (
-      <View className="p-3.5 rounded-md bg-purple-500/10 border border-purple-500/30 flex-row items-center gap-2.5">
-        <ActivityIndicator size="small" color={isDark ? '#a78bfa' : '#7c3aed'} />
-        <ThemedText type="small" className="text-purple-700 dark:text-purple-300 font-medium">
-          Generating Malayalam response with local LLM...
+      <View className="p-3.5 rounded-md bg-blue-500/10 border border-blue-500/30 flex-row items-center gap-2.5">
+        <ActivityIndicator size="small" color={isDark ? '#60a5fa' : '#2563eb'} />
+        <ThemedText type="small" className="text-blue-700 dark:text-blue-300 font-medium">
+          Generating response with local LLM...
         </ThemedText>
       </View>
     );
@@ -31,12 +31,12 @@ export function LlmMetricsPanel({ isBenchmarking = false, result }: LlmMetricsPa
   if (result) {
     return (
       <View className="p-3.5 rounded-md bg-emerald-500/10 border border-dashed border-emerald-500/40 gap-2">
-        {/* Header: Status Dot & Latency */}
+        {/* Header: Status Dot & Total Turnaround */}
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center gap-1.5">
             <View className="w-2 h-2 rounded-full bg-emerald-500" />
             <ThemedText type="smallBold" className="text-emerald-700 dark:text-emerald-300">
-              Live Malayalam Output
+              Live LLM Output
             </ThemedText>
           </View>
           <View className="flex-row items-center gap-1">
@@ -47,7 +47,7 @@ export function LlmMetricsPanel({ isBenchmarking = false, result }: LlmMetricsPa
           </View>
         </View>
 
-        {/* Synthesized Response Text */}
+        {/* Generated Response Text */}
         <ThemedText selectable type="p" className="text-foreground leading-6 font-medium">
           &ldquo;{result.response}&rdquo;
         </ThemedText>
@@ -83,7 +83,7 @@ export function LlmMetricsPanel({ isBenchmarking = false, result }: LlmMetricsPa
 
           <View className="h-6 flex-row items-center justify-center px-2 rounded-md bg-card border border-border">
             <ThemedText type="muted" className="text-muted-foreground text-xs leading-none">
-              Load:{' '}
+              Cold Load:{' '}
               <ThemedText type="code" className="text-xs text-foreground leading-none">
                 {result.loadTimeMs} ms
               </ThemedText>
@@ -103,16 +103,5 @@ export function LlmMetricsPanel({ isBenchmarking = false, result }: LlmMetricsPa
     );
   }
 
-  // 3. Waiting / Empty State (Dashed border)
-  return (
-    <View className="p-3.5 rounded-md bg-secondary/40 border border-dashed border-border gap-1">
-      <ThemedText type="smallBold" className="text-muted-foreground">
-        Live Malayalam Output
-      </ThemedText>
-      <ThemedText type="muted" className="text-muted-foreground italic text-xs">
-        Select a prompt preset or enter Malayalam text above and tap &ldquo;Run Benchmark
-        Turn&rdquo;
-      </ThemedText>
-    </View>
-  );
+  return null;
 }

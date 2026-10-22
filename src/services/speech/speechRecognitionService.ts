@@ -3,7 +3,6 @@ import type { SttEngine } from 'react-native-sherpa-onnx/stt';
 import { DEFAULT_SPEECH_MODEL } from '@/constants/speechModels';
 import { FsAdapter, RuntimeEnvironment } from '@/services/models';
 import type { SpeechModelMetadata, SttTranscriptionResult } from '@/types/speech';
-import { ModelFileService } from './modelFileService';
 
 export type { SttTranscriptionResult };
 
@@ -69,13 +68,11 @@ export class SpeechRecognitionService {
           type: 'file',
           path: readiness.resolvedPath.replace(/^file:\/\//, '').replace(/\/+$/, ''),
         };
-      } else if (readiness.storageLocation === 'bundled_asset') {
+      } else {
         modelPathConfig = {
           type: 'asset',
           path: `models/${model.id}`,
         };
-      } else {
-        modelPathConfig = await ModelFileService.resolveModelPathConfig(model);
       }
 
       // eslint-disable-next-line @typescript-eslint/no-require-imports

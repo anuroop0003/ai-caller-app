@@ -12,14 +12,21 @@ import { TtsHeader } from './tts-header';
 import { TtsInputSection } from './tts-input-section';
 import { TtsMetricsPanel } from './tts-metrics-panel';
 
+import type { UseTtsBenchmarkResult } from '@/hooks/use-tts-benchmark';
+
 export interface TtsBenchmarkCardProps {
   isReady?: boolean;
+  benchmarkHook?: UseTtsBenchmarkResult;
 }
 
-export function TtsBenchmarkCard({ isReady = true }: TtsBenchmarkCardProps = {}) {
+export function TtsBenchmarkCard({
+  isReady = true,
+  benchmarkHook: externalHook,
+}: TtsBenchmarkCardProps = {}) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
+  const internalHook = useTtsBenchmark();
   const {
     configuredLanguageCode,
     configuredVoiceId,
@@ -35,7 +42,7 @@ export function TtsBenchmarkCard({ isReady = true }: TtsBenchmarkCardProps = {})
     updateInputText,
     playTest,
     stopTest,
-  } = useTtsBenchmark();
+  } = externalHook ?? internalHook;
 
   const langDef =
     SUPPORTED_TTS_LANGUAGES.find((l) => l.code === configuredLanguageCode) ??

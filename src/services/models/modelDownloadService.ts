@@ -2,6 +2,7 @@ import type { ModelFileEntry, UnifiedModelPackage } from '@/constants/models';
 import { DownloadSpeedTracker } from './internal/downloadSpeedTracker';
 import { type DownloadResumableInstance, FsAdapter } from './internal/fsAdapter';
 import { ModelFileService } from './modelFileService';
+import { ModelReadinessService } from './modelReadinessService';
 
 export type DownloadStateStatus =
   'idle' | 'checking' | 'downloading' | 'verifying' | 'ready' | 'error';
@@ -45,6 +46,18 @@ class ModelDownloadService {
 
   getCurrentState(): ModelDownloadProgressState {
     return this.currentState;
+  }
+
+  getActiveDownloadingModelId(): string | null {
+    return this.activeModelId;
+  }
+
+  getModelStorageDir(category: 'llm' | 'stt' | 'tts' = 'llm'): string {
+    return `${ModelFileService.getBaseStorageDir()}models/${category}/`;
+  }
+
+  getModelFilePath(filename: string): string {
+    return `${this.getModelStorageDir('llm')}${filename}`;
   }
 
   private updateProgress(partial: Partial<ModelDownloadProgressState>): void {
@@ -227,6 +240,9 @@ class ModelDownloadService {
         progressPercent: 100,
       });
 
+      // Evict cached readiness and broadcast completion so all tabs sync
+      ModelReadinessService.notifyModelChanged(model.id);
+
       return true;
     } catch (err) {
       const isCancelled = this.cancelRequested;
@@ -234,6 +250,7 @@ class ModelDownloadService {
         status: isCancelled ? 'idle' : 'error',
         error: isCancelled ? undefined : err instanceof Error ? err.message : String(err),
       });
+      ModelReadinessService.notifyModelChanged(model.id);
       return false;
     } finally {
       this.activeDownloadResumable = null;
@@ -246,6 +263,7 @@ class ModelDownloadService {
    * Cancels active download in flight.
    */
   async cancelDownload(): Promise<void> {
+    const cancelledModelId = this.activeModelId;
     this.cancelRequested = true;
     if (this.activeDownloadResumable) {
       try {
@@ -259,6 +277,7 @@ class ModelDownloadService {
       error: undefined,
     });
     this.activeModelId = null;
+    ModelReadinessService.notifyModelChanged(cancelledModelId ?? undefined);
   }
 }
 

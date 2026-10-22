@@ -1,22 +1,11 @@
-import { TtsModelMetadata } from '@/types/tts';
+import {
+  DEFAULT_TTS_MODEL as CANONICAL_DEFAULT_TTS_MODEL,
+  TTS_ANDROID_SYSTEM_MODEL,
+} from './models/ttsModels';
 
-/**
- * Android Native Text-to-Speech system model definition.
- * Uses hardware-accelerated speech engine without requiring bundled ONNX model files.
- */
-export const ANDROID_SYSTEM_TTS_MODEL: TtsModelMetadata = {
-  id: 'android-system-tts',
-  name: 'Android System Text-to-Speech',
-  language: 'Multilingual (System)',
-  languageCode: 'system',
-  voiceName: 'System Voice',
-  gender: 'female',
-  architecture: 'vits',
-  sampleRate: 24000,
-  files: [],
-};
-
-export const DEFAULT_TTS_MODEL = ANDROID_SYSTEM_TTS_MODEL;
+export { TTS_ANDROID_SYSTEM_MODEL };
+export const ANDROID_SYSTEM_TTS_MODEL = TTS_ANDROID_SYSTEM_MODEL;
+export const DEFAULT_TTS_MODEL = CANONICAL_DEFAULT_TTS_MODEL;
 
 export interface TtsPresetPhrase {
   readonly id: string;

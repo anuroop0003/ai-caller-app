@@ -9,6 +9,8 @@ import { DiagnosticsAlertBanner } from './diagnostics-alert-banner';
 import { LanguageFilterTabs } from './language-filter-tabs';
 import { SampleCard } from './sample-card';
 
+import { SttTabSkeleton } from './skeletons';
+
 export interface DiagnosticsSttContentProps {
   diagnosticsHook?: UseDiagnosticsResult;
 }
@@ -18,7 +20,11 @@ export function DiagnosticsSttContent({
 }: DiagnosticsSttContentProps = {}) {
   const internalHook = useDiagnostics();
   const hook = externalHook ?? internalHook;
-  const { isReady, missingFiles, readiness } = useModelReadiness('stt');
+  const { isReady, missingFiles, readiness, isCheckingInitialReadiness } = useModelReadiness('stt');
+
+  if (isCheckingInitialReadiness) {
+    return <SttTabSkeleton />;
+  }
 
   const {
     activeFilter,

@@ -120,4 +120,85 @@ describe('Audio Configuration Separation & TTS Architecture', () => {
 
     ttsSettingsStore.resetDefaults();
   });
+
+  test('6. Filter cached TTS voices by requested language', async () => {
+    const { nativeTtsService } = await import('@/services/speech/nativeTtsService');
+
+    // Seed mock cached voices into nativeTtsService
+    const mockVoices = [
+      {
+        identifier: 'ml-in-x-female-1',
+        name: 'Malayalam Female',
+        language: 'ml-IN',
+        quality: 'Enhanced',
+      },
+      {
+        identifier: 'ml-in-x-male-1',
+        name: 'Malayalam Male',
+        language: 'ml_IN',
+        quality: 'Default',
+      },
+      {
+        identifier: 'hi-in-x-female-1',
+        name: 'Hindi Female',
+        language: 'hi-IN',
+        quality: 'Enhanced',
+      },
+      { identifier: 'ta-in-x-male-1', name: 'Tamil Male', language: 'ta-IN', quality: 'Default' },
+      { identifier: 'en-us-x-sfg', name: 'English US', language: 'en-US', quality: 'Enhanced' },
+    ];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (nativeTtsService as any).cachedVoices = mockVoices;
+
+    // Filter Malayalam
+    const mlVoices = nativeTtsService.getCachedVoicesForLanguage('ml-IN');
+    assert.ok(mlVoices);
+    assert.equal(mlVoices.length, 2);
+    assert.ok(mlVoices.every((v) => v.language.toLowerCase().startsWith('ml')));
+
+    // Filter Hindi
+    const hiVoices = nativeTtsService.getCachedVoicesForLanguage('hi-IN');
+    assert.ok(hiVoices);
+    assert.equal(hiVoices.length, 1);
+    assert.equal(hiVoices[0].identifier, 'hi-in-x-female-1');
+
+    // Filter unsupported or non-existent language
+    const nonExistent = nativeTtsService.getCachedVoicesForLanguage('invalid-code');
+    assert.deepEqual(nonExistent, []);
+  });
+
+  test('7. Language switching does not retain voices from the previous language', async () => {
+    const { nativeTtsService } = await import('@/services/speech/nativeTtsService');
+
+    // Mock cached voices with distinct languages
+    const mockVoices = [
+      { identifier: 'ml-1', name: 'ML Voice', language: 'ml-IN' },
+      { identifier: 'hi-1', name: 'HI Voice', language: 'hi-IN' },
+      { identifier: 'ta-1', name: 'TA Voice', language: 'ta-IN' },
+    ];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (nativeTtsService as any).cachedVoices = mockVoices;
+
+    // Query 1: Malayalam
+    const mlVoices = nativeTtsService.getCachedVoicesForLanguage('ml-IN');
+    assert.ok(mlVoices?.some((v) => v.identifier === 'ml-1'));
+
+    // Query 2: Switch to Tamil
+    const taVoices = nativeTtsService.getCachedVoicesForLanguage('ta-IN');
+    assert.ok(taVoices?.some((v) => v.identifier === 'ta-1'));
+    // Ensure no Malayalam voices bleed into Tamil result
+    assert.ok(!taVoices?.some((v) => v.identifier === 'ml-1'));
+
+    // Query 3: Switch to Kannada (no voices installed)
+    const knVoices = nativeTtsService.getCachedVoicesForLanguage('kn-IN');
+    assert.deepEqual(knVoices, []);
+    // Stale voices from Tamil or Malayalam are NOT retained
+    assert.ok(!(knVoices as readonly any[])?.some((v) => v.identifier === 'ta-1'));
+    assert.ok(!(knVoices as readonly any[])?.some((v) => v.identifier === 'ml-1'));
+
+    // Reset cachedVoices to avoid polluting subsequent tests
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (nativeTtsService as any).cachedVoices = null;
+    assert.equal(nativeTtsService.getCachedVoicesForLanguage('ml-IN'), null);
+  });
 });

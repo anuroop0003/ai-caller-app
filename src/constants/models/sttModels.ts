@@ -13,6 +13,9 @@ export const STT_INDIC_CONFORMER_MODEL: UnifiedModelPackage = {
   totalSizeBytes: 141240753, // ~141.2 MB
   targetDirectory: 'models/sherpa-onnx-indic-conformer-ml',
   language: 'Malayalam & 21 Indic Languages',
+  languageCode: 'ml',
+  architecture: 'NeMo CTC / IndicConformer',
+  modelType: 'nemo_ctc',
   sampleRate: 16000,
   files: [
     {
